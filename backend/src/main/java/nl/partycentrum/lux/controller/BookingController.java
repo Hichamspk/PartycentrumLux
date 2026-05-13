@@ -118,7 +118,7 @@ public class BookingController {
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasRole('OWNER')")
     public BookingResponse cancel(@PathVariable Long id, @Valid @RequestBody BookingCancelRequest request) {
-        return annuleringService.cancel(id, request.reason());
+        return annuleringService.cancel(id, request.resolvedReason());
     }
 
     @DeleteMapping("/{id}")

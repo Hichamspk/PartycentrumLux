@@ -1,6 +1,6 @@
 package nl.partycentrum.lux.controller;
 
-import nl.partycentrum.lux.service.ContractService;
+import nl.partycentrum.lux.service.OfferteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,15 +13,15 @@ import java.util.Map;
 @RequestMapping("/api/webhooks/docuseal")
 public class DocusealWebhookController {
 
-    private final ContractService contractService;
+    private final OfferteService offerteService;
 
-    public DocusealWebhookController(ContractService contractService) {
-        this.contractService = contractService;
+    public DocusealWebhookController(OfferteService offerteService) {
+        this.offerteService = offerteService;
     }
 
     @PostMapping
     public ResponseEntity<Void> completed(@RequestBody Map<String, Object> payload) {
-        contractService.handleWebhook(payload);
+        offerteService.handleDocusealWebhook(payload);
         return ResponseEntity.ok().build();
     }
 }

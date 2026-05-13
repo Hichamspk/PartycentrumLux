@@ -151,7 +151,7 @@ public class OfferteService {
                 booking.getOndertekeningDatum(),
                 booking.getDocusealSubmissionId(),
                 booking.getOffertePdfPath(),
-                booking.getOffertePdfPath() == null ? null : "/api/offertes/" + booking.getId() + "/download"
+                booking.getOffertePdfPath() == null ? null : "/api/bookings/" + booking.getId() + "/offerte/download"
         );
     }
 
@@ -238,6 +238,9 @@ public class OfferteService {
     private String toXhtml(String html) {
         return html
                 .replace("<meta charset=\"UTF-8\">", "<meta charset=\"UTF-8\" />")
+                .replace("<br>", "<br />")
+                .replace("<br/>", "<br />")
+                .replaceAll("<img([^>]*?)(?<!/)>", "<img$1 />")
                 .replace("&nbsp;", "&#160;")
                 .replace("&copy;", "&#169;");
     }

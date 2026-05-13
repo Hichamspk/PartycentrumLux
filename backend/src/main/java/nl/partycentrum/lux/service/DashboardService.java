@@ -1,13 +1,11 @@
 package nl.partycentrum.lux.service;
 
 import nl.partycentrum.lux.domain.BookingStatus;
-import nl.partycentrum.lux.domain.InvoiceStatus;
 import nl.partycentrum.lux.dto.booking.BookingResponse;
 import nl.partycentrum.lux.dto.dashboard.ChartPoint;
 import nl.partycentrum.lux.dto.dashboard.DashboardStatsResponse;
 import nl.partycentrum.lux.dto.invoice.InvoiceResponse;
 import nl.partycentrum.lux.repository.BookingRepository;
-import nl.partycentrum.lux.repository.InvoiceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,20 +23,14 @@ public class DashboardService {
     private static final Locale NL = new Locale("nl", "NL");
 
     private final BookingRepository bookingRepository;
-    private final InvoiceRepository invoiceRepository;
     private final BookingService bookingService;
-    private final InvoiceService invoiceService;
 
     public DashboardService(
             BookingRepository bookingRepository,
-            InvoiceRepository invoiceRepository,
-            BookingService bookingService,
-            InvoiceService invoiceService
+            BookingService bookingService
     ) {
         this.bookingRepository = bookingRepository;
-        this.invoiceRepository = invoiceRepository;
         this.bookingService = bookingService;
-        this.invoiceService = invoiceService;
     }
 
     @Transactional(readOnly = true)
@@ -47,19 +39,17 @@ public class DashboardService {
         var start = currentMonth.atDay(1);
         var end = currentMonth.atEndOfMonth();
 
-        var invoices = invoiceRepository.findAll();
         var bookings = bookingRepository.findAll();
 
-        var revenueThisMonth = invoices.stream()
-                .filter(invoice -> invoice.getStatus() == InvoiceStatus.BETAALD)
-                .filter(invoice -> invoice.getPaidDate() != null)
-                .filter(invoice -> !invoice.getPaidDate().isBefore(start) && !invoice.getPaidDate().isAfter(end))
-                .map(invoice -> invoice.getTotalAmount())
+        var revenueThisMonth = bookings.stream()
+                .map(booking -> paidRevenueBetween(booking, start, end))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        var outstandingPayments = invoices.stream()
-                .filter(invoice -> invoice.getStatus() == InvoiceStatus.ONBETAALD || invoice.getStatus() == InvoiceStatus.VERLOPEN)
-                .map(invoice -> invoice.getTotalAmount())
+        var outstandingPayments = bookings.stream()
+                .filter(booking -> booking.getStatus() != BookingStatus.CONCEPT)
+                .filter(booking -> booking.getStatus() != BookingStatus.OFFERTE_VERZONDEN)
+                .filter(booking -> booking.getStatus() != BookingStatus.GEANNULEERD)
+                .map(this::outstandingForBooking)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         var revenue = new ArrayList<ChartPoint>();
@@ -70,11 +60,8 @@ public class DashboardService {
             var monthEnd = month.atEndOfMonth();
             var label = month.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, NL) + " " + month.getYear();
 
-            var monthlyRevenue = invoices.stream()
-                    .filter(invoice -> invoice.getStatus() == InvoiceStatus.BETAALD)
-                    .filter(invoice -> invoice.getPaidDate() != null)
-                    .filter(invoice -> !invoice.getPaidDate().isBefore(monthStart) && !invoice.getPaidDate().isAfter(monthEnd))
-                    .map(invoice -> invoice.getTotalAmount())
+            var monthlyRevenue = bookings.stream()
+                    .map(booking -> paidRevenueBetween(booking, monthStart, monthEnd))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             var monthlyBookings = bookings.stream()
@@ -89,10 +76,6 @@ public class DashboardService {
                 .stream()
                 .map(bookingService::toResponse)
                 .toList();
-        var recentInvoices = invoiceRepository.findTop5ByOrderByCreatedAtDesc().stream()
-                .map(invoiceService::toResponse)
-                .toList();
-
         return new DashboardStatsResponse(
                 revenueThisMonth,
                 bookingRepository.countByEventDateBetween(start, end),
@@ -101,7 +84,7 @@ public class DashboardService {
                 revenue,
                 bookingCounts,
                 upcoming,
-                recentInvoices
+                List.of()
         );
     }
 
@@ -115,9 +98,35 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public List<InvoiceResponse> recentInvoices() {
-        return invoiceRepository.findTop5ByOrderByCreatedAtDesc().stream()
-                .map(invoiceService::toResponse)
-                .toList();
+        return List.of();
+    }
+
+    private BigDecimal paidRevenueBetween(nl.partycentrum.lux.domain.Booking booking, LocalDate start, LocalDate end) {
+        var amount = BigDecimal.ZERO;
+        if (booking.isAanbetalingBetaald()
+                && booking.getAanbetalingBetaaldDatum() != null
+                && !booking.getAanbetalingBetaaldDatum().isBefore(start)
+                && !booking.getAanbetalingBetaaldDatum().isAfter(end)) {
+            amount = amount.add(booking.getAanbetalingBedrag());
+        }
+        if (booking.isRestantBetaald()
+                && booking.getRestantBetaaldDatum() != null
+                && !booking.getRestantBetaaldDatum().isBefore(start)
+                && !booking.getRestantBetaaldDatum().isAfter(end)) {
+            amount = amount.add(booking.getRestantBedrag());
+        }
+        return amount;
+    }
+
+    private BigDecimal outstandingForBooking(nl.partycentrum.lux.domain.Booking booking) {
+        var amount = BigDecimal.ZERO;
+        if (!booking.isAanbetalingBetaald()) {
+            amount = amount.add(booking.getAanbetalingBedrag());
+        }
+        if (!booking.isRestantBetaald()) {
+            amount = amount.add(booking.getRestantBedrag());
+        }
+        return amount;
     }
 
     private double occupancyRate(LocalDate start, LocalDate end) {

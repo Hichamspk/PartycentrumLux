@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lux-postgres
+    environment:
+      POSTGRES_DB: lux_booking
+      POSTGRES_USER: lux
+      POSTGRES_PASSWORD: lux_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - lux-postgres-data:/var/lib/postgresql/data
+    networks:
+      - lux-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: lux-backend
+    depends_on:
+      - postgres
+      - docuseal
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/lux_booking
+      DB_USERNAME: lux
+      DB_PASSWORD: lux_password
+      CORS_ALLOWED_ORIGINS: http://localhost:4200
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@partycentrumlux.nl}
+      OWNER_EMAIL: ${OWNER_EMAIL:-owner@partycentrumlux.nl}
+      INVOICE_STORAGE_DIR: /app/invoices
+      COMPANY_LOGO_PATH: /app/logo.png
+    ports:
+      - "8080:8080"
+    volumes:
+      - lux-invoices:/app/invoices
+    restart: unless-stopped
+    networks:
+      - lux-network
+
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: lux-docuseal
+    ports:
+      - "3000:3000"
+    volumes:
+      - docuseal_data:/data
+    environment:
+      - SECRET_KEY_BASE=${DOCUSEAL_SECRET_KEY_BASE:-generate_random_secret}
+    restart: unless-stopped
+    networks:
+      - lux-network
+
+volumes:
+  lux-postgres-data:
+  lux-invoices:
+  docuseal_data:
+
+networks:
+  lux-network:
+    driver: bridge

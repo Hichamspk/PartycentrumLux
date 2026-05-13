@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="nl">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>Huurovereenkomst [[contract_nummer]]</title>
+  <style>
+    @page { size: A4; margin: 22mm 18mm; }
+    body { color: #172033; font-family: Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.65; margin: 0; }
+    h1, h2 { color: #111827; margin: 0; }
+    h1 { font-size: 25px; line-height: 1.2; }
+    h2 { border-bottom: 1px solid #e5e7eb; font-size: 15px; margin-top: 24px; padding-bottom: 5px; }
+    table { border-collapse: collapse; width: 100%; }
+    td { vertical-align: top; }
+    .top { margin-bottom: 28px; }
+    .logo { max-height: 76px; max-width: 150px; }
+    .fallback-logo { background: #111827; color: #fff; display: [[logo_fallback_display]]; font-size: 32px; font-weight: 800; height: 70px; line-height: 70px; text-align: center; width: 70px; }
+    .logo-img { display: [[logo_image_display]]; }
+    .company { color: #4b5563; font-size: 11px; line-height: 1.7; text-align: right; }
+    .accent-line { background: [[brand_color]]; height: 3px; margin: 16px 0 20px; width: 100%; }
+    .meta { background: #f9fafb; border-left: 4px solid [[brand_color]]; margin-top: 12px; padding: 12px 14px; }
+    .kv { margin: 10px 0; }
+    .kv td:first-child { color: #4b5563; font-weight: bold; width: 190px; }
+    .box { background: #fbfaf5; border: 1px solid #eee7d4; margin-top: 12px; padding: 12px 14px; }
+    .signature { border: 1px solid #d1d5db; height: 90px; margin-top: 10px; padding: 12px; }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+  </style>
+</head>
+<body>
+  <table class="top">
+    <tr>
+      <td>
+        <img class="logo logo-img" src="[[logo_src]]" alt="Partycentrum Lux logo" />
+        <div class="fallback-logo">L</div>
+      </td>
+      <td class="company">
+        <strong>[[bedrijf_naam]]</strong><br />
+        [[bedrijf_adres]]<br />
+        [[bedrijf_postcode]] [[bedrijf_stad]]<br />
+        KvK [[kvk]] | BTW [[btw_nummer]]<br />
+        [[telefoon]] | [[email]]<br />
+        [[website]]
+      </td>
+    </tr>
+  </table>
+
+  <h1>Huurovereenkomst Evenementenlocatie</h1>
+  <div class="accent-line"></div>
+  <div class="meta">
+    Datum: <strong>[[contract_datum]]</strong><br />
+    Contractnummer: <strong>[[contract_nummer]]</strong>
+  </div>
+
+  <h2>Partijen</h2>
+  <p><strong>Verhuurder:</strong> Partycentrum Lux</p>
+  <p><strong>Huurder:</strong> [[klant_naam]], [[klant_adres]], [[klant_email]], [[klant_telefoon]]</p>
+
+  <h2>Evenementdetails</h2>
+  <table class="kv">
+    <tr><td>Datum</td><td>[[evenement_datum]]</td></tr>
+    <tr><td>Tijden</td><td>[[start_tijd]] - [[eind_tijd]]</td></tr>
+    <tr><td>Type</td><td>[[evenement_type]]</td></tr>
+    <tr><td>Aantal gasten</td><td>[[aantal_gasten]]</td></tr>
+  </table>
+
+  <h2>Eigenschappen</h2>
+  [[eigenschappen_lijst]]
+
+  <h2>Financieel</h2>
+  <table class="kv">
+    <tr><td>Huurprijs excl. BTW</td><td>[[prijs_excl_btw]]</td></tr>
+    <tr><td>BTW 21%</td><td>[[btw_bedrag]]</td></tr>
+    <tr><td>Totaal incl. BTW</td><td><strong>[[prijs_incl_btw]]</strong></td></tr>
+  </table>
+
+  <h2>Betalingsvoorwaarden</h2>
+  <ul>
+    <li>30% aanbetaling binnen 7 dagen na ondertekening.</li>
+    <li>Restant uiterlijk 14 dagen voor evenement.</li>
+    <li>IBAN: [[iban]].</li>
+    <li>Onder vermelding van: [[contract_nummer]].</li>
+  </ul>
+
+  <h2>Algemene voorwaarden</h2>
+  <div class="box">[[algemene_voorwaarden]]</div>
+
+  <h2>Aanvullende voorwaarden</h2>
+  <div class="box">[[extra_voorwaarden]]</div>
+
+  <h2>Handtekening</h2>
+  <table>
+    <tr>
+      <td style="width: 50%; padding-right: 16px;">
+        Naam huurder<br />
+        <div class="signature">[text|req|signer1|Naam huurder]</div>
+      </td>
+      <td style="width: 50%;">
+        Datum ondertekening<br />
+        <div class="signature">[date|req|signer1|Datum ondertekening]</div>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2" style="padding-top: 16px;">
+        Handtekening<br />
+        <div class="signature">[signature|req|signer1|Handtekening]</div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

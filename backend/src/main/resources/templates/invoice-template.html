@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="nl">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>Factuur {{invoiceNumber}}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #ffffff;
+      color: #1a1a1a;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .page {
+      background: #ffffff;
+      min-height: 297mm;
+      overflow: hidden;
+      position: relative;
+      width: 210mm;
+    }
+
+    .deco-right {
+      background: {{brandColorSoft}};
+      bottom: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 52px;
+    }
+
+    .deco-right-line {
+      background: {{brandColor}};
+      bottom: 0;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 6px;
+    }
+
+    .deco-top-right {
+      border-color: transparent {{brandColor}} transparent transparent;
+      border-style: solid;
+      border-width: 0 52px 120px 0;
+      height: 0;
+      opacity: .25;
+      position: absolute;
+      right: 52px;
+      top: 0;
+      width: 0;
+    }
+
+    .content {
+      padding: 40px 90px 40px 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .top-table,
+    .title-table,
+    .parties-table,
+    .items-table,
+    .totals-table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .top-table td,
+    .title-table td,
+    .parties-table td {
+      vertical-align: top;
+    }
+
+    .logo-img {
+      display: {{logoImageDisplay}};
+      max-height: 80px;
+      max-width: 140px;
+    }
+
+    .logo-fallback {
+      background: #111827;
+      color: #ffffff;
+      display: {{logoFallbackDisplay}};
+      font-size: 32px;
+      font-weight: 800;
+      height: 70px;
+      line-height: 70px;
+      text-align: center;
+      width: 70px;
+    }
+
+    .company-block {
+      color: #555555;
+      font-size: 11.5px;
+      line-height: 1.75;
+      text-align: right;
+    }
+
+    .company-block .name {
+      color: #1a1a1a;
+      display: block;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .gold-line {
+      background: {{brandColor}};
+      height: 1.5px;
+      margin: 30px 0 26px;
+      width: 100%;
+    }
+
+    .invoice-title {
+      color: #1a1a1a;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 42px;
+      font-weight: normal;
+      letter-spacing: 2px;
+      line-height: 1;
+      margin: 0;
+    }
+
+    .invoice-number-badge {
+      background: {{brandColor}};
+      color: #ffffff;
+      display: inline-block;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 7px 16px;
+      text-align: center;
+    }
+
+    .meta-table {
+      border-collapse: collapse;
+      margin: 18px 0 28px;
+      width: 285px;
+    }
+
+    .meta-table td {
+      color: #555555;
+      font-size: 12px;
+      padding: 3px 0;
+    }
+
+    .meta-table td:first-child {
+      color: #1a1a1a;
+      font-weight: bold;
+      padding-right: 20px;
+      white-space: nowrap;
+    }
+
+    .parties-table {
+      border-bottom: .5px solid #e0e0d8;
+      border-top: .5px solid #e0e0d8;
+      margin-bottom: 28px;
+    }
+
+    .parties-table td {
+      color: #555555;
+      font-size: 11.5px;
+      line-height: 1.8;
+      padding: 20px 0;
+      width: 50%;
+    }
+
+    .party-label {
+      color: {{brandColor}};
+      font-size: 9px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .party-name {
+      color: #1a1a1a;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .items-table {
+      margin-bottom: 22px;
+    }
+
+    .items-table th {
+      border-bottom: 1.5px solid {{brandColor}};
+      color: {{brandColor}};
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      padding: 8px 10px;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    .items-table td {
+      border-bottom: 1px solid #ece8df;
+      color: #1a1a1a;
+      font-size: 12px;
+      padding: 12px 10px;
+      vertical-align: top;
+    }
+
+    .item-detail {
+      color: #666666;
+      display: block;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .totals-wrap {
+      margin-left: auto;
+      width: 270px;
+    }
+
+    .totals-table td {
+      color: #555555;
+      font-size: 12px;
+      padding: 5px 0;
+    }
+
+    .totals-table td:last-child {
+      color: #1a1a1a;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    .grand-total td {
+      border-top: 2px solid {{brandColor}};
+      color: #1a1a1a;
+      font-size: 15px;
+      padding-top: 8px;
+    }
+
+    .payment-box {
+      background: #faf9f5;
+      border-left: 4px solid {{brandColor}};
+      color: #555555;
+      font-size: 11.5px;
+      line-height: 1.65;
+      margin-top: 32px;
+      padding: 14px 16px;
+    }
+
+    .footer-note {
+      color: #777777;
+      font-size: 10.5px;
+      margin-top: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="deco-right"></div>
+    <div class="deco-right-line"></div>
+    <div class="deco-top-right"></div>
+
+    <div class="content">
+      <table class="top-table">
+        <tr>
+          <td>
+            <img class="logo-img" src="{{logoSrc}}" alt="{{companyName}} logo" />
+            <div class="logo-fallback">L</div>
+          </td>
+          <td class="company-block">
+            <span class="name">{{companyName}}</span>
+            {{companyAddress}}<br />
+            {{companyPostalCode}} {{companyCity}}<br />
+            KvK {{companyKvk}}<br />
+            BTW {{companyVatNumber}}<br />
+            {{companyPhone}} | {{companyEmail}}<br />
+            {{companyWebsite}}
+          </td>
+        </tr>
+      </table>
+
+      <div class="gold-line"></div>
+
+      <table class="title-table">
+        <tr>
+          <td><h1 class="invoice-title">Factuur</h1></td>
+          <td class="text-right"><span class="invoice-number-badge">{{invoiceNumber}}</span></td>
+        </tr>
+      </table>
+
+      <table class="meta-table">
+        <tr><td>Factuurnummer</td><td>{{invoiceNumber}}</td></tr>
+        <tr><td>Factuurdatum</td><td>{{invoiceDate}}</td></tr>
+        <tr><td>Vervaldatum</td><td>{{invoiceDueDate}}</td></tr>
+      </table>
+
+      <table class="parties-table">
+        <tr>
+          <td>
+            <div class="party-label">Factuur aan</div>
+            <div class="party-name">{{customerName}}</div>
+            {{customerEmail}}<br />
+            {{customerPhone}}<br />
+            {{customerAddress}}
+          </td>
+          <td>
+            <div class="party-label">Van</div>
+            <div class="party-name">{{companyName}}</div>
+            {{companyPhone}}<br />
+            {{companyEmail}}<br />
+            {{companyWebsite}}<br />
+            IBAN {{companyIban}}
+          </td>
+        </tr>
+      </table>
+
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Omschrijving</th>
+            <th>Aantal</th>
+            <th class="text-right">Prijs</th>
+            <th class="text-right">Totaal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <strong>{{invoiceDescription}}</strong>
+              <span class="item-detail">Evenement op {{bookingDate}} voor {{guestCount}} gasten</span>
+            </td>
+            <td>1</td>
+            <td class="text-right">{{amount}}</td>
+            <td class="text-right">{{amount}}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="totals-wrap">
+        <table class="totals-table">
+          <tr><td>Bedrag</td><td>{{amount}}</td></tr>
+          <tr><td>BTW 21%</td><td>{{vatAmount}}</td></tr>
+          <tr class="grand-total"><td>Totaal</td><td>{{totalAmount}}</td></tr>
+        </table>
+      </div>
+
+      <div class="payment-box">
+        Gelieve het totaalbedrag over te maken naar {{companyIban}} onder vermelding van {{invoiceNumber}}.
+      </div>
+
+      <div class="footer-note">
+        Bedankt voor uw vertrouwen in {{companyName}}.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

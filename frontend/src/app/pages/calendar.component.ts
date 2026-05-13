@@ -117,9 +117,8 @@ export class CalendarComponent implements OnInit {
   bookingSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     return {
       CONCEPT: 'secondary',
-      CONTRACT_VERZONDEN: 'info',
-      CONTRACT_ONDERTEKEND: 'info',
-      FACTUUR_VERZONDEN: 'warn',
+      OFFERTE_VERZONDEN: 'info',
+      BEVESTIGD: 'info',
       AANBETALING_BETAALD: 'warn',
       VOLLEDIG_BETAALD: 'success',
       AFGEROND: 'success',

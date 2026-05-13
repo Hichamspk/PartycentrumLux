@@ -69,14 +69,23 @@ public class DocusealService {
                 "body", "Geachte " + customer.getNaam() + ",\n\nHierbij ontvangt u uw offerte van Partycentrum Lux. Klik op de onderstaande knop om de offerte te bekijken en digitaal te ondertekenen.\n\nMet vriendelijke groet,\nHussain Siddiqui\nPartycentrum Lux"
         ));
 
-        var document = new LinkedHashMap<String, Object>();
-        document.put("name", "Offerte-" + documentRef);
-        document.put("file", pdfBase64);
-
         var body = new LinkedHashMap<String, Object>();
         body.put("send_email", true);
+        if (settings.getDocusealContractTemplateId() != null && !settings.getDocusealContractTemplateId().isBlank()) {
+            body.put("template_id", templateId(settings.getDocusealContractTemplateId()));
+            verhuurder.put("send_email", false);
+            huurder.put("send_email", true);
+            verhuurder.put("values", Map.of(
+                    "signature", settings.getDocusealHussainSignatureToken(),
+                    "Handtekening verhuurder", settings.getDocusealHussainSignatureToken()
+            ));
+        } else {
+            var document = new LinkedHashMap<String, Object>();
+            document.put("name", "Offerte-" + documentRef);
+            document.put("file", pdfBase64);
+            body.put("documents", List.of(document));
+        }
         body.put("submitters", List.of(verhuurder, huurder));
-        body.put("documents", List.of(document));
 
         try {
             var response = postForObject(docusealUrl, settings.getDocusealApiKey(), body);

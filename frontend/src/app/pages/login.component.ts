@@ -17,7 +17,7 @@ import { AuthService } from '../core/auth.service';
               <div class="flex h-12 w-12 items-center justify-center rounded-md bg-white text-xl font-black text-slate-950">L</div>
               <h1 class="mt-8 text-4xl font-black leading-tight">Partycentrum Lux</h1>
               <p class="mt-4 max-w-md text-base leading-7 text-slate-300">
-                Beheer boekingen, klanten, facturen en betalingen vanuit een rustige, snelle werkruimte.
+                Beheer boekingen, klanten, offertes en betalingen vanuit een rustige, snelle werkruimte.
               </p>
             </div>
             <div class="grid grid-cols-3 gap-3 text-sm text-slate-300">

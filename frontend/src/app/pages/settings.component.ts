@@ -354,7 +354,7 @@ export class SettingsComponent implements OnInit {
     this.api.uploadLogo(file).subscribe({
       next: (settings) => {
         this.patch(settings);
-        this.messages.add({ severity: 'success', summary: 'Logo opgeslagen', detail: 'Het logo is opgeslagen als factuurinstelling.' });
+        this.messages.add({ severity: 'success', summary: 'Logo opgeslagen', detail: 'Het logo is opgeslagen als offerte-instelling.' });
       },
       error: (error) => {
         this.uploadingLogo = false;

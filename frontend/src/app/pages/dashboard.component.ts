@@ -64,7 +64,7 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <p class="font-semibold">{{ booking.customerName }}</p>
-                    <p class="muted">{{ (booking.eventDate || booking.date) | date:'dd MMM yyyy' }} · {{ booking.eventType }} · {{ booking.guestCount }} gasten</p>
+                    <p class="muted">{{ (booking.eventDate || booking.date) | date:'dd MMM yyyy' }} - {{ booking.eventType }} - {{ booking.guestCount }} gasten</p>
                   </div>
                   <p-tag [value]="booking.status" [severity]="bookingSeverity(booking.status)"></p-tag>
                 </div>
@@ -77,20 +77,20 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
 
         @if (auth.isOwner) {
           <section class="surface-panel rounded-md p-5">
-            <h2 class="text-lg font-bold">Recente facturen</h2>
+            <h2 class="text-lg font-bold">Recente offertes</h2>
             <div class="mt-4 space-y-3">
               @for (invoice of recentInvoices; track invoice.id) {
                 <article class="rounded-md border border-slate-200 p-4 dark:border-slate-800">
                   <div class="flex items-center justify-between gap-3">
                     <div>
                       <p class="font-semibold">{{ invoice.invoiceNumber }}</p>
-                      <p class="muted">{{ invoice.customerName }} · {{ invoice.totalAmount | currency:'EUR' }}</p>
+                      <p class="muted">{{ invoice.customerName }} - {{ invoice.totalAmount | currency:'EUR' }}</p>
                     </div>
                     <p-tag [value]="invoice.status" [severity]="invoice.status === 'BETAALD' ? 'success' : invoice.status === 'VERLOPEN' ? 'danger' : 'warn'"></p-tag>
                   </div>
                 </article>
               } @empty {
-                <p class="muted">Nog geen facturen.</p>
+                <p class="muted">Nog geen offertes verzonden.</p>
               }
             </div>
           </section>
@@ -139,9 +139,8 @@ export class DashboardComponent implements OnInit {
   bookingSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     return {
       CONCEPT: 'secondary',
-      CONTRACT_VERZONDEN: 'info',
-      CONTRACT_ONDERTEKEND: 'info',
-      FACTUUR_VERZONDEN: 'warn',
+      OFFERTE_VERZONDEN: 'info',
+      BEVESTIGD: 'info',
       AANBETALING_BETAALD: 'warn',
       VOLLEDIG_BETAALD: 'success',
       AFGEROND: 'success',

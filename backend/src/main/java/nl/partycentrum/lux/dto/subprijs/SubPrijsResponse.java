@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record SubPrijsResponse(
         Long id,
         String naam,
+        BigDecimal bedrag,
         BigDecimal prijs,
         int position
 ) {

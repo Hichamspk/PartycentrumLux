@@ -1,6 +1,7 @@
 package nl.partycentrum.lux.dto.booking;
 
-import jakarta.validation.constraints.NotBlank;
-
-public record BookingCancelRequest(@NotBlank String reason) {
+public record BookingCancelRequest(String reason, String annuleringsReden) {
+    public String resolvedReason() {
+        return annuleringsReden != null && !annuleringsReden.isBlank() ? annuleringsReden : reason;
+    }
 }

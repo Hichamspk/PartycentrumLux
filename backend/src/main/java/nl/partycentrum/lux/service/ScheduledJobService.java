@@ -53,7 +53,7 @@ public class ScheduledJobService {
         bookingRepository.findByEventDateAndStatusIn(
                         today.plusDays(7),
                         List.of(
-                                BookingStatus.FACTUUR_VERZONDEN,
+                                BookingStatus.BEVESTIGD,
                                 BookingStatus.AANBETALING_BETAALD,
                                 BookingStatus.VOLLEDIG_BETAALD
                         )

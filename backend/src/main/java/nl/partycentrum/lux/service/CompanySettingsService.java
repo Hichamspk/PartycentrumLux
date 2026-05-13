@@ -49,8 +49,16 @@ public class CompanySettingsService {
         settings.setWebsite(request.website());
         settings.setMailFrom(request.mailFrom());
         settings.setDocusealApiKey(request.docusealApiKey());
-        settings.setDocusealBaseUrl(defaultIfBlank(request.docusealBaseUrl(), "http://docuseal:3000"));
+        settings.setDocusealBaseUrl(defaultIfBlank(request.docusealBaseUrl(), "http://lux-docuseal:3000"));
         settings.setDocusealContractTemplateId(blankToNull(request.docusealContractTemplateId()));
+        settings.setDocusealHussainEmail(blankToNull(request.docusealHussainEmail()));
+        settings.setDocusealHussainSignatureToken(blankToNull(request.docusealHussainSignatureToken()));
+        settings.setGoogleReviewUrl(defaultIfBlank(request.googleReviewUrl(), defaultReviewUrl()));
+        settings.setSmtpHost(defaultIfBlank(request.smtpHost(), "smtp.gmail.com"));
+        settings.setSmtpPort(request.smtpPort() == null ? 587 : request.smtpPort());
+        settings.setSmtpUsername(blankToNull(request.smtpUsername()));
+        settings.setSmtpPassword(blankToNull(request.smtpPassword()));
+        settings.setSmtpFrom(defaultIfBlank(request.smtpFrom(), request.mailFrom()));
         settings.setGeneralTerms(defaultIfBlank(request.generalTerms(), defaultGeneralTerms()));
         return toResponse(settings);
     }
@@ -87,8 +95,16 @@ public class CompanySettingsService {
             settings.setWebsite("www.partycentrumlux.nl");
             settings.setMailFrom(mailProperties.from());
             settings.setDocusealApiKey(null);
-            settings.setDocusealBaseUrl("http://docuseal:3000");
+            settings.setDocusealBaseUrl("http://lux-docuseal:3000");
             settings.setDocusealContractTemplateId(null);
+            settings.setDocusealHussainEmail(null);
+            settings.setDocusealHussainSignatureToken(null);
+            settings.setGoogleReviewUrl(defaultReviewUrl());
+            settings.setSmtpHost("smtp.gmail.com");
+            settings.setSmtpPort(587);
+            settings.setSmtpUsername(null);
+            settings.setSmtpPassword(null);
+            settings.setSmtpFrom(mailProperties.from());
             settings.setGeneralTerms(defaultGeneralTerms());
             return repository.save(settings);
         });
@@ -114,6 +130,14 @@ public class CompanySettingsService {
                 settings.getDocusealApiKey(),
                 settings.getDocusealBaseUrl(),
                 settings.getDocusealContractTemplateId(),
+                settings.getDocusealHussainEmail(),
+                settings.getDocusealHussainSignatureToken(),
+                settings.getGoogleReviewUrl(),
+                settings.getSmtpHost(),
+                settings.getSmtpPort(),
+                settings.getSmtpUsername(),
+                settings.getSmtpPassword(),
+                settings.getSmtpFrom(),
                 settings.getGeneralTerms(),
                 settings.getCreatedAt(),
                 settings.getUpdatedAt()
@@ -130,5 +154,9 @@ public class CompanySettingsService {
 
     private String defaultGeneralTerms() {
         return "Annulering, schade, geluid en overige afspraken worden conform de algemene voorwaarden van Partycentrum Lux behandeld.";
+    }
+
+    private String defaultReviewUrl() {
+        return "https://www.google.com/search?q=Partycentrum+Lux+review";
     }
 }

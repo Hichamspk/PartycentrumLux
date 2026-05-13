@@ -72,13 +72,13 @@ public class SubPrijsService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Naam van subprijs is verplicht.");
         }
         subPrijs.setNaam(request.naam().trim());
-        subPrijs.setPrijs(money(request.prijs() == null ? BigDecimal.ZERO : request.prijs()));
+        subPrijs.setBedrag(money(request.resolvedBedrag() == null ? BigDecimal.ZERO : request.resolvedBedrag()));
         subPrijs.setPosition(request.position() == null ? subPrijs.getPosition() : request.position());
     }
 
     private BigDecimal total(Long bookingId) {
         return subPrijsRepository.findByBookingIdOrderByPositionAscIdAsc(bookingId).stream()
-                .map(SubPrijs::getPrijs)
+                .map(SubPrijs::getBedrag)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
     }
@@ -88,6 +88,6 @@ public class SubPrijsService {
     }
 
     private SubPrijsResponse toResponse(SubPrijs subPrijs) {
-        return new SubPrijsResponse(subPrijs.getId(), subPrijs.getNaam(), subPrijs.getPrijs(), subPrijs.getPosition());
+        return new SubPrijsResponse(subPrijs.getId(), subPrijs.getNaam(), subPrijs.getBedrag(), subPrijs.getBedrag(), subPrijs.getPosition());
     }
 }

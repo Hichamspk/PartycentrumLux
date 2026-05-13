@@ -1,5 +1,6 @@
 package nl.partycentrum.lux.domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
@@ -14,9 +15,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -50,16 +54,22 @@ public class Booking extends BaseEntity {
     @Column(name = "guest_count", nullable = false)
     private int guestCount;
 
-    @Column(nullable = false)
-    private BigDecimal price;
+    @Column(name = "price", nullable = false)
+    private BigDecimal priceSnapshot = BigDecimal.ZERO;
 
-    @OneToMany(mappedBy = "booking", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC, id ASC")
     private List<SubPrijs> subPrijzen = new ArrayList<>();
 
+    @Column(nullable = false)
+    private BigDecimal korting = BigDecimal.ZERO;
+
+    @Column(name = "aanbetaling_percentage", nullable = false)
+    private int aanbetalingPercentage = 30;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BookingStatus status;
+    private BookingStatus status = BookingStatus.CONCEPT;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -85,8 +95,41 @@ public class Booking extends BaseEntity {
     @Column(name = "contract_signed_date")
     private LocalDate contractSignedDate;
 
+    @Column(name = "offerte_datum")
+    private LocalDate offerteDatum;
+
+    @Column(name = "offerte_sent_date")
+    private LocalDate offerteSentDate;
+
+    @Column(name = "ondertekening_datum")
+    private LocalDate ondertekeningDatum;
+
+    @Column(name = "aanbetaling_betaald", nullable = false)
+    private boolean aanbetalingBetaald;
+
+    @Column(name = "aanbetaling_betaald_datum")
+    private LocalDate aanbetalingBetaaldDatum;
+
+    @Column(name = "restant_betaald", nullable = false)
+    private boolean restantBetaald;
+
+    @Column(name = "restant_betaald_datum")
+    private LocalDate restantBetaaldDatum;
+
+    @Column(name = "offerte_pdf_path")
+    private String offertePdfPath;
+
     @Column(name = "annulerings_reden", columnDefinition = "TEXT")
     private String annuleringsReden;
+
+    @PrePersist
+    @PreUpdate
+    public void syncCalculatedColumns() {
+        priceSnapshot = getTotaal();
+        if (offerteDatum == null && status == BookingStatus.OFFERTE_VERZONDEN) {
+            offerteDatum = LocalDate.now();
+        }
+    }
 
     public Long getId() {
         return id;
@@ -98,6 +141,14 @@ public class Booking extends BaseEntity {
 
     public void setCustomer(Customer customer) {
         this.customer = customer;
+    }
+
+    public LocalDate getEvenementDatum() {
+        return eventDate;
+    }
+
+    public void setEvenementDatum(LocalDate evenementDatum) {
+        this.eventDate = evenementDatum;
     }
 
     public LocalDate getEventDate() {
@@ -124,12 +175,28 @@ public class Booking extends BaseEntity {
         this.eventDate = endDate;
     }
 
+    public LocalTime getStartTijd() {
+        return startTime;
+    }
+
+    public void setStartTijd(LocalTime startTijd) {
+        this.startTime = startTijd;
+    }
+
     public LocalTime getStartTime() {
         return startTime;
     }
 
     public void setStartTime(LocalTime startTime) {
         this.startTime = startTime;
+    }
+
+    public LocalTime getEindTijd() {
+        return endTime;
+    }
+
+    public void setEindTijd(LocalTime eindTijd) {
+        this.endTime = eindTijd;
     }
 
     public LocalTime getEndTime() {
@@ -140,12 +207,28 @@ public class Booking extends BaseEntity {
         this.endTime = endTime;
     }
 
+    public EventType getEvenementType() {
+        return eventType;
+    }
+
+    public void setEvenementType(EventType evenementType) {
+        this.eventType = evenementType;
+    }
+
     public EventType getEventType() {
         return eventType;
     }
 
     public void setEventType(EventType eventType) {
         this.eventType = eventType;
+    }
+
+    public int getAantalGasten() {
+        return guestCount;
+    }
+
+    public void setAantalGasten(int aantalGasten) {
+        this.guestCount = aantalGasten;
     }
 
     public int getGuestCount() {
@@ -157,11 +240,11 @@ public class Booking extends BaseEntity {
     }
 
     public BigDecimal getPrice() {
-        return price;
+        return getTotaal();
     }
 
     public void setPrice(BigDecimal price) {
-        this.price = price;
+        this.priceSnapshot = money(price);
     }
 
     public List<SubPrijs> getSubPrijzen() {
@@ -180,12 +263,64 @@ public class Booking extends BaseEntity {
         subPrijzen.add(subPrijs);
     }
 
+    public BigDecimal getSubtotaal() {
+        if (subPrijzen.isEmpty()) {
+            return money(priceSnapshot);
+        }
+        return subPrijzen.stream()
+                .map(SubPrijs::getBedrag)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal getKorting() {
+        return money(korting);
+    }
+
+    public void setKorting(BigDecimal korting) {
+        this.korting = money(korting);
+    }
+
+    public BigDecimal getTotaal() {
+        var totaal = getSubtotaal().subtract(getKorting());
+        if (totaal.compareTo(BigDecimal.ZERO) < 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return totaal.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public int getAanbetalingPercentage() {
+        return aanbetalingPercentage;
+    }
+
+    public void setAanbetalingPercentage(int aanbetalingPercentage) {
+        this.aanbetalingPercentage = Math.max(0, Math.min(100, aanbetalingPercentage));
+    }
+
+    public BigDecimal getAanbetalingBedrag() {
+        return getTotaal()
+                .multiply(BigDecimal.valueOf(aanbetalingPercentage))
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal getRestantBedrag() {
+        return getTotaal().subtract(getAanbetalingBedrag()).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public LocalDate getAanbetalingDeadline() {
+        return ondertekeningDatum == null ? null : ondertekeningDatum.plusDays(7);
+    }
+
+    public LocalDate getRestantDeadline() {
+        return eventDate == null ? null : eventDate.minusDays(14);
+    }
+
     public BookingStatus getStatus() {
         return status;
     }
 
     public void setStatus(BookingStatus status) {
-        this.status = status;
+        this.status = status == null ? BookingStatus.CONCEPT : status;
     }
 
     public String getNotes() {
@@ -204,6 +339,14 @@ public class Booking extends BaseEntity {
         this.properties = properties == null ? new ArrayList<>() : new ArrayList<>(properties);
     }
 
+    public List<String> getEigenschappen() {
+        return properties;
+    }
+
+    public void setEigenschappen(List<String> eigenschappen) {
+        setProperties(eigenschappen);
+    }
+
     public String getConditions() {
         return conditions;
     }
@@ -217,7 +360,7 @@ public class Booking extends BaseEntity {
     }
 
     public void setContractStatus(ContractStatus contractStatus) {
-        this.contractStatus = contractStatus;
+        this.contractStatus = contractStatus == null ? ContractStatus.GEEN : contractStatus;
     }
 
     public String getDocusealSubmissionId() {
@@ -237,11 +380,77 @@ public class Booking extends BaseEntity {
     }
 
     public LocalDate getContractSignedDate() {
-        return contractSignedDate;
+        return ondertekeningDatum != null ? ondertekeningDatum : contractSignedDate;
     }
 
     public void setContractSignedDate(LocalDate contractSignedDate) {
         this.contractSignedDate = contractSignedDate;
+        this.ondertekeningDatum = contractSignedDate;
+    }
+
+    public LocalDate getOfferteDatum() {
+        return offerteDatum;
+    }
+
+    public void setOfferteDatum(LocalDate offerteDatum) {
+        this.offerteDatum = offerteDatum;
+    }
+
+    public LocalDate getOfferteSentDate() {
+        return offerteSentDate;
+    }
+
+    public void setOfferteSentDate(LocalDate offerteSentDate) {
+        this.offerteSentDate = offerteSentDate;
+    }
+
+    public LocalDate getOndertekeningDatum() {
+        return ondertekeningDatum;
+    }
+
+    public void setOndertekeningDatum(LocalDate ondertekeningDatum) {
+        this.ondertekeningDatum = ondertekeningDatum;
+        this.contractSignedDate = ondertekeningDatum;
+    }
+
+    public boolean isAanbetalingBetaald() {
+        return aanbetalingBetaald;
+    }
+
+    public void setAanbetalingBetaald(boolean aanbetalingBetaald) {
+        this.aanbetalingBetaald = aanbetalingBetaald;
+    }
+
+    public LocalDate getAanbetalingBetaaldDatum() {
+        return aanbetalingBetaaldDatum;
+    }
+
+    public void setAanbetalingBetaaldDatum(LocalDate aanbetalingBetaaldDatum) {
+        this.aanbetalingBetaaldDatum = aanbetalingBetaaldDatum;
+    }
+
+    public boolean isRestantBetaald() {
+        return restantBetaald;
+    }
+
+    public void setRestantBetaald(boolean restantBetaald) {
+        this.restantBetaald = restantBetaald;
+    }
+
+    public LocalDate getRestantBetaaldDatum() {
+        return restantBetaaldDatum;
+    }
+
+    public void setRestantBetaaldDatum(LocalDate restantBetaaldDatum) {
+        this.restantBetaaldDatum = restantBetaaldDatum;
+    }
+
+    public String getOffertePdfPath() {
+        return offertePdfPath;
+    }
+
+    public void setOffertePdfPath(String offertePdfPath) {
+        this.offertePdfPath = offertePdfPath;
     }
 
     public String getAnnuleringsReden() {
@@ -250,5 +459,9 @@ public class Booking extends BaseEntity {
 
     public void setAnnuleringsReden(String annuleringsReden) {
         this.annuleringsReden = annuleringsReden;
+    }
+
+    private BigDecimal money(BigDecimal amount) {
+        return (amount == null ? BigDecimal.ZERO : amount).setScale(2, RoundingMode.HALF_UP);
     }
 }

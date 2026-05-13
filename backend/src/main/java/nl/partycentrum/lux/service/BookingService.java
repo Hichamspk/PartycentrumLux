@@ -53,7 +53,7 @@ public class BookingService {
                 .filter(booking -> startDate == null || !booking.getEventDate().isBefore(startDate))
                 .filter(booking -> endDate == null || !booking.getEventDate().isAfter(endDate))
                 .filter(booking -> customer == null || customer.isBlank()
-                        || booking.getCustomer().getName().toLowerCase().contains(customer.toLowerCase()))
+                        || booking.getCustomer().getNaam().toLowerCase().contains(customer.toLowerCase()))
                 .map(this::toResponse)
                 .toList();
     }
@@ -116,26 +116,49 @@ public class BookingService {
         return new BookingResponse(
                 booking.getId(),
                 booking.getCustomer().getId(),
-                booking.getCustomer().getName(),
+                booking.getCustomer().getNaam(),
+                booking.getCustomer().getNaam(),
                 booking.getCustomer().getEmail(),
-                booking.getCustomer().getPhone(),
-                booking.getCustomer().getAddress(),
+                booking.getCustomer().getTelefoon(),
+                booking.getCustomer().getAdres(),
+                booking.getEvenementDatum(),
                 booking.getEventDate(),
                 booking.getEventDate(),
                 booking.getEventDate(),
+                booking.getStartTijd(),
                 booking.getStartTime(),
+                booking.getEindTijd(),
                 booking.getEndTime(),
+                booking.getEvenementType(),
                 booking.getEventType(),
+                booking.getAantalGasten(),
                 booking.getGuestCount(),
-                booking.getPrice(),
+                booking.getSubtotaal(),
+                booking.getKorting(),
+                booking.getTotaal(),
+                booking.getTotaal(),
+                booking.getAanbetalingPercentage(),
+                booking.getAanbetalingBedrag(),
+                booking.getRestantBedrag(),
+                booking.getAanbetalingDeadline(),
+                booking.getRestantDeadline(),
                 booking.getSubPrijzen().stream().map(this::toSubPrijsResponse).toList(),
                 booking.getStatus(),
                 booking.getNotes(),
+                List.copyOf(booking.getEigenschappen()),
                 List.copyOf(booking.getProperties()),
                 booking.getConditions(),
                 booking.getContractStatus(),
                 booking.getDocusealSubmissionId(),
+                booking.getOfferteDatum(),
+                booking.getOfferteSentDate(),
+                booking.getOndertekeningDatum(),
                 booking.getContractSignedDate(),
+                booking.isAanbetalingBetaald(),
+                booking.getAanbetalingBetaaldDatum(),
+                booking.isRestantBetaald(),
+                booking.getRestantBetaaldDatum(),
+                booking.getOffertePdfPath(),
                 booking.getAnnuleringsReden(),
                 invoiceId,
                 booking.getCreatedAt(),
@@ -144,28 +167,41 @@ public class BookingService {
     }
 
     private void apply(Booking booking, BookingRequest request) {
-        var eventDate = request.eventDate() != null ? request.eventDate() : request.date();
+        var eventDate = request.resolvedEvenementDatum();
         if (eventDate == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Evenementdatum is verplicht.");
         }
-        var startTime = request.startTime() == null ? LocalTime.of(18, 0) : request.startTime();
-        var endTime = request.endTime() == null ? LocalTime.of(23, 0) : request.endTime();
+        var startTime = request.resolvedStartTijd() == null ? LocalTime.of(18, 0) : request.resolvedStartTijd();
+        var endTime = request.resolvedEindTijd() == null ? LocalTime.of(23, 0) : request.resolvedEindTijd();
         if (!endTime.isAfter(startTime)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "De eindtijd moet na de begintijd liggen.");
+        }
+        var eventType = request.resolvedEvenementType();
+        if (eventType == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Evenementtype is verplicht.");
+        }
+        var guestCount = request.resolvedAantalGasten();
+        if (guestCount == null || guestCount < 1) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Aantal gasten is verplicht.");
+        }
+        if (request.customerId() == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Klant is verplicht.");
         }
         booking.setCustomer(customerService.getCustomer(request.customerId()));
         booking.setEventDate(eventDate);
         booking.setStartTime(startTime);
         booking.setEndTime(endTime);
-        booking.setEventType(request.eventType());
-        booking.setGuestCount(request.guestCount());
+        booking.setEventType(eventType);
+        booking.setGuestCount(guestCount);
         booking.setSubPrijzen(toSubPrijzen(request.subPrijzen(), request.price()));
-        booking.setPrice(totalSubPrijzen(booking));
+        booking.setKorting(request.korting());
+        booking.setAanbetalingPercentage(request.aanbetalingPercentage() == null ? 30 : request.aanbetalingPercentage());
+        booking.setPrice(totalSubPrijzen(booking).subtract(booking.getKorting()));
         booking.setStatus(request.status() == null
                 ? (booking.getStatus() == null ? BookingStatus.CONCEPT : booking.getStatus())
                 : request.status());
         booking.setNotes(request.notes());
-        booking.setProperties(cleanProperties(request.properties()));
+        booking.setProperties(cleanProperties(request.resolvedEigenschappen()));
         booking.setConditions(request.conditions());
     }
 
@@ -204,7 +240,7 @@ public class BookingService {
         if (subPrijzen == null || subPrijzen.isEmpty()) {
             var subPrijs = new SubPrijs();
             subPrijs.setNaam("Huur evenementenlocatie");
-            subPrijs.setPrijs(money(fallbackPrice == null ? BigDecimal.ZERO : fallbackPrice));
+            subPrijs.setBedrag(money(fallbackPrice == null ? BigDecimal.ZERO : fallbackPrice));
             subPrijs.setPosition(0);
             return List.of(subPrijs);
         }
@@ -221,7 +257,7 @@ public class BookingService {
             }
             var subPrijs = new SubPrijs();
             subPrijs.setNaam(naam);
-            subPrijs.setPrijs(money(request.prijs() == null ? BigDecimal.ZERO : request.prijs()));
+            subPrijs.setBedrag(money(request.resolvedBedrag() == null ? BigDecimal.ZERO : request.resolvedBedrag()));
             subPrijs.setPosition(request.position() == null ? i : request.position());
             result.add(subPrijs);
         }
@@ -233,13 +269,13 @@ public class BookingService {
 
     private BigDecimal totalSubPrijzen(Booking booking) {
         return booking.getSubPrijzen().stream()
-                .map(SubPrijs::getPrijs)
+                .map(SubPrijs::getBedrag)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
     private SubPrijsResponse toSubPrijsResponse(SubPrijs subPrijs) {
-        return new SubPrijsResponse(subPrijs.getId(), subPrijs.getNaam(), subPrijs.getPrijs(), subPrijs.getPosition());
+        return new SubPrijsResponse(subPrijs.getId(), subPrijs.getNaam(), subPrijs.getBedrag(), subPrijs.getBedrag(), subPrijs.getPosition());
     }
 
     private BigDecimal money(BigDecimal amount) {

@@ -76,7 +76,7 @@ public class ContractService {
         booking.setContractHtml(renderedHtml);
         booking.setDocusealSubmissionId(submission.submissionId());
         booking.setContractStatus(ContractStatus.VERZONDEN);
-        booking.setStatus(BookingStatus.CONTRACT_VERZONDEN);
+        booking.setStatus(BookingStatus.OFFERTE_VERZONDEN);
         mailService.sendContractSigningRequest(booking, submission.signingUrl());
         return toResponse(booking);
     }
@@ -111,7 +111,7 @@ public class ContractService {
     private void markSigned(Booking booking) {
         booking.setContractStatus(ContractStatus.ONDERTEKEND);
         booking.setContractSignedDate(LocalDate.now());
-        booking.setStatus(BookingStatus.CONTRACT_ONDERTEKEND);
+        booking.setStatus(BookingStatus.BEVESTIGD);
         invoiceService.createForSignedContract(booking);
         mailService.sendContractSignedConfirmation(booking);
     }

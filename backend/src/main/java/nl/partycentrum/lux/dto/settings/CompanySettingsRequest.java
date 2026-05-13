@@ -22,6 +22,14 @@ public record CompanySettingsRequest(
         String docusealApiKey,
         @NotBlank String docusealBaseUrl,
         String docusealContractTemplateId,
+        String docusealHussainEmail,
+        String docusealHussainSignatureToken,
+        String googleReviewUrl,
+        String smtpHost,
+        Integer smtpPort,
+        String smtpUsername,
+        String smtpPassword,
+        String smtpFrom,
         @NotBlank String generalTerms
 ) {
 }

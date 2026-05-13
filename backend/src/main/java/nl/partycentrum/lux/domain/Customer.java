@@ -15,27 +15,36 @@ public class Customer extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
+    @Column(name = "name", nullable = false)
+    private String naam;
 
     @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
-    private String phone;
+    @Column(name = "phone", nullable = false)
+    private String telefoon;
 
-    private String address;
+    @Column(name = "address")
+    private String adres;
 
     public Long getId() {
         return id;
     }
 
+    public String getNaam() {
+        return naam;
+    }
+
+    public void setNaam(String naam) {
+        this.naam = naam;
+    }
+
     public String getName() {
-        return name;
+        return naam;
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.naam = name;
     }
 
     public String getEmail() {
@@ -46,19 +55,35 @@ public class Customer extends BaseEntity {
         this.email = email;
     }
 
+    public String getTelefoon() {
+        return telefoon;
+    }
+
+    public void setTelefoon(String telefoon) {
+        this.telefoon = telefoon;
+    }
+
     public String getPhone() {
-        return phone;
+        return telefoon;
     }
 
     public void setPhone(String phone) {
-        this.phone = phone;
+        this.telefoon = phone;
+    }
+
+    public String getAdres() {
+        return adres;
+    }
+
+    public void setAdres(String adres) {
+        this.adres = adres;
     }
 
     public String getAddress() {
-        return address;
+        return adres;
     }
 
     public void setAddress(String address) {
-        this.address = address;
+        this.adres = address;
     }
 }

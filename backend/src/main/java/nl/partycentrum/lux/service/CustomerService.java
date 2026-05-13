@@ -24,7 +24,7 @@ public class CustomerService {
     public List<CustomerResponse> findAll(String search) {
         var customers = search == null || search.isBlank()
                 ? customerRepository.findAll()
-                : customerRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search);
+                : customerRepository.findByNaamContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search);
         return customers.stream().map(this::toResponse).toList();
     }
 
@@ -60,19 +60,30 @@ public class CustomerService {
     public CustomerResponse toResponse(Customer customer) {
         return new CustomerResponse(
                 customer.getId(),
-                customer.getName(),
+                customer.getNaam(),
+                customer.getNaam(),
                 customer.getEmail(),
-                customer.getPhone(),
-                customer.getAddress(),
+                customer.getTelefoon(),
+                customer.getTelefoon(),
+                customer.getAdres(),
+                customer.getAdres(),
                 customer.getCreatedAt(),
                 customer.getUpdatedAt()
         );
     }
 
     private void apply(Customer customer, CustomerRequest request) {
-        customer.setName(request.name());
+        var naam = request.resolvedNaam();
+        var telefoon = request.resolvedTelefoon();
+        if (naam == null || naam.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Klantnaam is verplicht.");
+        }
+        if (telefoon == null || telefoon.isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Telefoonnummer is verplicht.");
+        }
+        customer.setNaam(naam.trim());
         customer.setEmail(request.email());
-        customer.setPhone(request.phone());
-        customer.setAddress(request.address());
+        customer.setTelefoon(telefoon.trim());
+        customer.setAdres(request.resolvedAdres());
     }
 }

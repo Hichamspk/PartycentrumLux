@@ -66,6 +66,30 @@ public class CompanySettings extends BaseEntity {
     @Column(name = "docuseal_contract_template_id")
     private String docusealContractTemplateId;
 
+    @Column(name = "docuseal_hussain_email")
+    private String docusealHussainEmail;
+
+    @Column(name = "docuseal_hussain_signature_token", columnDefinition = "TEXT")
+    private String docusealHussainSignatureToken;
+
+    @Column(name = "google_review_url")
+    private String googleReviewUrl;
+
+    @Column(name = "smtp_host", nullable = false)
+    private String smtpHost;
+
+    @Column(name = "smtp_port", nullable = false)
+    private int smtpPort;
+
+    @Column(name = "smtp_username")
+    private String smtpUsername;
+
+    @Column(name = "smtp_password")
+    private String smtpPassword;
+
+    @Column(name = "smtp_from")
+    private String smtpFrom;
+
     @Column(name = "general_terms", nullable = false, columnDefinition = "TEXT")
     private String generalTerms;
 
@@ -207,6 +231,70 @@ public class CompanySettings extends BaseEntity {
 
     public void setDocusealContractTemplateId(String docusealContractTemplateId) {
         this.docusealContractTemplateId = docusealContractTemplateId;
+    }
+
+    public String getDocusealHussainEmail() {
+        return docusealHussainEmail;
+    }
+
+    public void setDocusealHussainEmail(String docusealHussainEmail) {
+        this.docusealHussainEmail = docusealHussainEmail;
+    }
+
+    public String getDocusealHussainSignatureToken() {
+        return docusealHussainSignatureToken;
+    }
+
+    public void setDocusealHussainSignatureToken(String docusealHussainSignatureToken) {
+        this.docusealHussainSignatureToken = docusealHussainSignatureToken;
+    }
+
+    public String getGoogleReviewUrl() {
+        return googleReviewUrl;
+    }
+
+    public void setGoogleReviewUrl(String googleReviewUrl) {
+        this.googleReviewUrl = googleReviewUrl;
+    }
+
+    public String getSmtpHost() {
+        return smtpHost;
+    }
+
+    public void setSmtpHost(String smtpHost) {
+        this.smtpHost = smtpHost;
+    }
+
+    public int getSmtpPort() {
+        return smtpPort;
+    }
+
+    public void setSmtpPort(int smtpPort) {
+        this.smtpPort = smtpPort;
+    }
+
+    public String getSmtpUsername() {
+        return smtpUsername;
+    }
+
+    public void setSmtpUsername(String smtpUsername) {
+        this.smtpUsername = smtpUsername;
+    }
+
+    public String getSmtpPassword() {
+        return smtpPassword;
+    }
+
+    public void setSmtpPassword(String smtpPassword) {
+        this.smtpPassword = smtpPassword;
+    }
+
+    public String getSmtpFrom() {
+        return smtpFrom;
+    }
+
+    public void setSmtpFrom(String smtpFrom) {
+        this.smtpFrom = smtpFrom;
     }
 
     public String getGeneralTerms() {

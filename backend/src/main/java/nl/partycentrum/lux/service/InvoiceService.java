@@ -157,7 +157,7 @@ public class InvoiceService {
             }
             mailService.sendInvoice(invoice);
         });
-        booking.setStatus(BookingStatus.FACTUUR_VERZONDEN);
+        booking.setStatus(BookingStatus.BEVESTIGD);
         return invoices.stream().map(this::toResponse).toList();
     }
 
@@ -266,8 +266,7 @@ public class InvoiceService {
     private Booking requireSignedBooking(Long bookingId) {
         var booking = getBooking(bookingId);
         if (booking.getContractStatus() != ContractStatus.ONDERTEKEND
-                && booking.getStatus() != BookingStatus.CONTRACT_ONDERTEKEND
-                && booking.getStatus() != BookingStatus.FACTUUR_VERZONDEN
+                && booking.getStatus() != BookingStatus.BEVESTIGD
                 && booking.getStatus() != BookingStatus.AANBETALING_BETAALD
                 && booking.getStatus() != BookingStatus.VOLLEDIG_BETAALD
                 && booking.getStatus() != BookingStatus.AFGEROND) {

@@ -18,6 +18,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByStatusAndEventDateBefore(BookingStatus status, LocalDate date);
 
+    List<Booking> findByStatusInOrderByEventDateAsc(List<BookingStatus> statuses);
+
     List<Booking> findTop5ByEventDateGreaterThanEqualAndStatusNotOrderByEventDateAsc(LocalDate date, BookingStatus status);
 
     List<Booking> findByStatusNotAndEventDate(

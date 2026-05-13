@@ -8,9 +8,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Entity
 @Table(name = "sub_prijzen")
@@ -28,10 +31,23 @@ public class SubPrijs extends BaseEntity {
     private String naam;
 
     @Column(nullable = false)
-    private BigDecimal prijs;
+    private BigDecimal bedrag = BigDecimal.ZERO;
+
+    @Column(nullable = false)
+    private BigDecimal prijs = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private int position;
+
+    @PrePersist
+    @PreUpdate
+    public void syncLegacyPrijs() {
+        if (bedrag == null) {
+            bedrag = BigDecimal.ZERO;
+        }
+        bedrag = bedrag.setScale(2, RoundingMode.HALF_UP);
+        prijs = bedrag;
+    }
 
     public Long getId() {
         return id;
@@ -53,12 +69,21 @@ public class SubPrijs extends BaseEntity {
         this.naam = naam;
     }
 
+    public BigDecimal getBedrag() {
+        return bedrag == null ? BigDecimal.ZERO : bedrag;
+    }
+
+    public void setBedrag(BigDecimal bedrag) {
+        this.bedrag = money(bedrag);
+        this.prijs = this.bedrag;
+    }
+
     public BigDecimal getPrijs() {
-        return prijs;
+        return getBedrag();
     }
 
     public void setPrijs(BigDecimal prijs) {
-        this.prijs = prijs;
+        setBedrag(prijs);
     }
 
     public int getPosition() {
@@ -67,5 +92,9 @@ public class SubPrijs extends BaseEntity {
 
     public void setPosition(int position) {
         this.position = position;
+    }
+
+    private BigDecimal money(BigDecimal amount) {
+        return (amount == null ? BigDecimal.ZERO : amount).setScale(2, RoundingMode.HALF_UP);
     }
 }

@@ -14,8 +14,12 @@ import {
   EventType,
   Invoice,
   InvoiceStatus,
+  Offerte,
   SubPrijs,
   Payment,
+  PaymentPart,
+  PaymentSchedule,
+  PaymentState,
   User
 } from './models';
 
@@ -151,6 +155,26 @@ export class ApiService {
     return this.http.get(`${this.apiUrl}/bookings/${id}/contract/download-signed`, { responseType: 'blob' });
   }
 
+  offerte(bookingId: number): Observable<Offerte> {
+    return this.http.get<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte`);
+  }
+
+  offertePreview(bookingId: number): Observable<string> {
+    return this.http.get(`${this.apiUrl}/bookings/${bookingId}/offerte/preview`, { responseType: 'text' });
+  }
+
+  generateOfferte(bookingId: number): Observable<Offerte> {
+    return this.http.post<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte/generate`, {});
+  }
+
+  sendOfferte(bookingId: number): Observable<Offerte> {
+    return this.http.post<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte/send`, {});
+  }
+
+  downloadOfferte(bookingId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/bookings/${bookingId}/offerte/download`, { responseType: 'blob' });
+  }
+
   invoices(status?: InvoiceStatus | null): Observable<Invoice[]> {
     const params = status ? new HttpParams().set('status', status) : undefined;
     return this.http.get<Invoice[]>(`${this.apiUrl}/invoices`, { params });
@@ -198,7 +222,26 @@ export class ApiService {
     return this.http.delete<void>(`${this.apiUrl}/invoices/${id}`);
   }
 
-  payments(): Observable<Payment[]> {
+  payments(status?: PaymentState | null, search?: string | null): Observable<PaymentSchedule[]> {
+    let params = new HttpParams();
+    if (status) {
+      params = params.set('status', status);
+    }
+    if (search) {
+      params = params.set('search', search);
+    }
+    return this.http.get<PaymentSchedule[]>(`${this.apiUrl}/payments`, { params });
+  }
+
+  bookingPayments(bookingId: number): Observable<PaymentSchedule[]> {
+    return this.http.get<PaymentSchedule[]>(`${this.apiUrl}/payments/bookings/${bookingId}`);
+  }
+
+  markBookingPaymentPaid(bookingId: number, type: PaymentPart): Observable<PaymentSchedule> {
+    return this.http.post<PaymentSchedule>(`${this.apiUrl}/payments/bookings/${bookingId}/mark-paid`, { type });
+  }
+
+  legacyPayments(): Observable<Payment[]> {
     return this.http.get<Payment[]>(`${this.apiUrl}/payments`);
   }
 

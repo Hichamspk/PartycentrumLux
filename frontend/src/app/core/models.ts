@@ -2,9 +2,8 @@ export type Role = 'OWNER' | 'EMPLOYEE';
 export type EventType = 'BRUILOFT' | 'VERJAARDAG' | 'CONGRES' | 'OVERIG';
 export type BookingStatus =
   | 'CONCEPT'
-  | 'CONTRACT_VERZONDEN'
-  | 'CONTRACT_ONDERTEKEND'
-  | 'FACTUUR_VERZONDEN'
+  | 'OFFERTE_VERZONDEN'
+  | 'BEVESTIGD'
   | 'AANBETALING_BETAALD'
   | 'VOLLEDIG_BETAALD'
   | 'AFGEROND'
@@ -13,6 +12,8 @@ export type ContractStatus = 'GEEN' | 'CONCEPT' | 'VERZONDEN' | 'ONDERTEKEND';
 export type InvoiceStatus = 'CONCEPT' | 'ONBETAALD' | 'BETAALD' | 'VERLOPEN';
 export type InvoiceType = 'VOLLEDIG' | 'AANBETALING' | 'RESTANT';
 export type PaymentMethod = 'BANK' | 'CASH' | 'PIN';
+export type PaymentPart = 'AANBETALING' | 'RESTANT';
+export type PaymentState = 'OPENSTAAND' | 'BETAALD' | 'VERLOPEN';
 
 export interface AuthResponse {
   accessToken: string;
@@ -25,9 +26,12 @@ export interface AuthResponse {
 
 export interface Customer {
   id: number;
+  naam: string;
   name: string;
   email: string;
+  telefoon: string;
   phone: string;
+  adres?: string;
   address?: string;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +41,7 @@ export interface SubPrijs {
   id?: number;
   bookingId?: number;
   naam: string;
+  bedrag: number;
   prijs: number;
   position?: number;
 }
@@ -45,29 +50,64 @@ export interface Booking {
   id: number;
   customerId: number;
   customerName: string;
+  klantNaam: string;
   customerEmail: string;
   customerPhone: string;
   customerAddress?: string;
+  evenementDatum: string;
   eventDate: string;
   date: string;
   endDate: string;
+  startTijd: string;
   startTime: string;
+  eindTijd: string;
   endTime: string;
+  evenementType: EventType;
   eventType: EventType;
+  aantalGasten: number;
   guestCount: number;
+  subtotaal: number;
+  korting: number;
+  totaal: number;
   price: number;
+  aanbetalingPercentage: number;
+  aanbetalingBedrag: number;
+  restantBedrag: number;
+  aanbetalingDeadline?: string;
+  restantDeadline?: string;
   subPrijzen: SubPrijs[];
   status: BookingStatus;
   notes?: string;
+  eigenschappen: string[];
   properties: string[];
   conditions?: string;
   contractStatus: ContractStatus;
   docusealSubmissionId?: string;
+  offerteDatum?: string;
+  offerteSentDate?: string;
+  ondertekeningDatum?: string;
   contractSignedDate?: string;
+  aanbetalingBetaald: boolean;
+  aanbetalingBetaaldDatum?: string;
+  restantBetaald: boolean;
+  restantBetaaldDatum?: string;
+  offertePdfPath?: string;
   annuleringsReden?: string;
   invoiceId?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Offerte {
+  bookingId: number;
+  status: BookingStatus;
+  documentRef: string;
+  offerteDatum?: string;
+  offerteSentDate?: string;
+  ondertekeningDatum?: string;
+  docusealSubmissionId?: string;
+  pdfPath?: string;
+  downloadUrl?: string;
 }
 
 export interface Contract {
@@ -111,6 +151,23 @@ export interface Payment {
   updatedAt: string;
 }
 
+export interface PaymentSchedule {
+  bookingId: number;
+  customerId: number;
+  klantNaam: string;
+  customerName: string;
+  customerEmail: string;
+  evenementDatum: string;
+  evenementType: EventType;
+  bookingStatus: BookingStatus;
+  type: PaymentPart;
+  bedrag: number;
+  deadline?: string;
+  status: PaymentState;
+  betaaldDatum?: string;
+  locked: boolean;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -139,6 +196,14 @@ export interface CompanySettings {
   docusealApiKey?: string;
   docusealBaseUrl: string;
   docusealContractTemplateId?: string;
+  docusealHussainEmail?: string;
+  docusealHussainSignatureToken?: string;
+  googleReviewUrl?: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername?: string;
+  smtpPassword?: string;
+  smtpFrom?: string;
   generalTerms: string;
   createdAt: string;
   updatedAt: string;

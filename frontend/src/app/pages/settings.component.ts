@@ -19,15 +19,15 @@ type PreviewVariables = Record<string, string>;
     <section class="space-y-6">
       <div>
         <h1 class="page-title">Instellingen</h1>
-        <p class="muted">Bedrijfsgegevens, factuurstijl, mailafzender en weergave.</p>
+        <p class="muted">Bedrijfsgegevens, offertestijl, DocuSeal, mail en weergave.</p>
       </div>
 
       <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_620px]">
         <form class="surface-panel grid gap-6 rounded-md p-5" [formGroup]="form" (ngSubmit)="save()">
           <section class="grid gap-4">
             <div>
-              <h2 class="text-lg font-bold text-slate-950 dark:text-white">Factuur instellingen</h2>
-              <p class="muted">Deze gegevens verschijnen op facturen en in de live preview.</p>
+              <h2 class="text-lg font-bold text-slate-950 dark:text-white">Offerte instellingen</h2>
+              <p class="muted">Deze gegevens verschijnen op offertes en in de live preview.</p>
             </div>
 
             <div class="grid gap-4 lg:grid-cols-2">
@@ -47,7 +47,7 @@ type PreviewVariables = Record<string, string>;
                     <img [src]="logoUrl" alt="Huidig logo preview" class="h-16 max-w-44 object-contain">
                     <div>
                       <p class="text-sm font-semibold text-slate-950 dark:text-white">Huidig logo</p>
-                      <p class="muted">Wordt gebruikt in de factuurpreview en PDF.</p>
+                      <p class="muted">Wordt gebruikt in de offertepreview en PDF.</p>
                     </div>
                   </div>
                 }
@@ -121,12 +121,34 @@ type PreviewVariables = Record<string, string>;
           <section class="grid gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
             <div>
               <h2 class="text-lg font-bold text-slate-950 dark:text-white">Mail instellingen</h2>
-              <p class="muted">Afzender voor bevestigingen, herinneringen en samenvattingen.</p>
+            <p class="muted">SMTP gegevens voor bevestigingen, herinneringen en reviews.</p>
             </div>
+            <div class="grid gap-4 lg:grid-cols-2">
             <label>
               <span class="mb-2 block text-sm font-semibold">Mail afzender</span>
               <input pInputText class="w-full" type="text" inputmode="email" formControlName="mailFrom">
             </label>
+            <label>
+              <span class="mb-2 block text-sm font-semibold">SMTP host</span>
+              <input pInputText class="w-full" formControlName="smtpHost">
+            </label>
+            <label>
+              <span class="mb-2 block text-sm font-semibold">SMTP poort</span>
+              <p-inputNumber formControlName="smtpPort" [min]="1" styleClass="w-full"></p-inputNumber>
+            </label>
+            <label>
+              <span class="mb-2 block text-sm font-semibold">SMTP gebruikersnaam</span>
+              <input pInputText class="w-full" formControlName="smtpUsername">
+            </label>
+            <label>
+              <span class="mb-2 block text-sm font-semibold">SMTP wachtwoord</span>
+              <input pInputText class="w-full" type="password" autocomplete="off" formControlName="smtpPassword">
+            </label>
+            <label>
+              <span class="mb-2 block text-sm font-semibold">SMTP from</span>
+              <input pInputText class="w-full" formControlName="smtpFrom">
+            </label>
+            </div>
           </section>
 
           <section class="grid gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
@@ -158,8 +180,18 @@ type PreviewVariables = Record<string, string>;
               </label>
 
               <label>
-                <span class="mb-2 block text-sm font-semibold">DocuSeal template ID</span>
-                <input pInputText class="w-full" inputmode="numeric" formControlName="docusealContractTemplateId">
+                <span class="mb-2 block text-sm font-semibold">Hussain e-mail</span>
+                <input pInputText class="w-full" type="email" formControlName="docusealHussainEmail">
+              </label>
+
+              <label>
+                <span class="mb-2 block text-sm font-semibold">Hussain signature token</span>
+                <input pInputText class="w-full" type="password" autocomplete="off" formControlName="docusealHussainSignatureToken">
+              </label>
+
+              <label class="lg:col-span-2">
+                <span class="mb-2 block text-sm font-semibold">Google review URL</span>
+                <input pInputText class="w-full" formControlName="googleReviewUrl">
               </label>
 
               <label class="lg:col-span-2">
@@ -188,7 +220,7 @@ type PreviewVariables = Record<string, string>;
           <div class="flex items-center justify-between gap-4">
             <div>
               <h2 class="text-lg font-bold text-slate-950 dark:text-white">Live voorbeeld</h2>
-              <p class="muted">Dezelfde HTML-template als de PDF-generator.</p>
+              <p class="muted">Live offertevoorbeeld met dummydata.</p>
             </div>
             <span class="h-8 w-8 rounded-md border border-slate-200 dark:border-slate-700" [style.background-color]="brandColorValue"></span>
           </div>
@@ -196,7 +228,7 @@ type PreviewVariables = Record<string, string>;
           <div class="mt-4 overflow-hidden rounded-md bg-slate-100 p-3 dark:bg-slate-950">
             @if (previewHtml) {
               <iframe
-                title="Live factuurvoorbeeld"
+                title="Live offertevoorbeeld"
                 class="h-[760px] w-full border-0 bg-white"
                 sandbox=""
                 [srcdoc]="previewHtml"
@@ -236,8 +268,16 @@ export class SettingsComponent implements OnInit {
     website: ['', Validators.required],
     mailFrom: ['', [Validators.required, Validators.email]],
     docusealApiKey: [''],
-    docusealBaseUrl: ['http://docuseal:3000', Validators.required],
+    docusealBaseUrl: ['http://lux-docuseal:3000', Validators.required],
     docusealContractTemplateId: [''],
+    docusealHussainEmail: [''],
+    docusealHussainSignatureToken: [''],
+    googleReviewUrl: [''],
+    smtpHost: ['smtp.gmail.com'],
+    smtpPort: [587],
+    smtpUsername: [''],
+    smtpPassword: [''],
+    smtpFrom: [''],
     generalTerms: ['', Validators.required]
   });
 
@@ -249,13 +289,7 @@ export class SettingsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.api.invoiceTemplate().subscribe({
-      next: (template) => {
-        this.invoiceTemplate = template;
-        this.refreshPreview();
-      },
-      error: () => this.messages.add({ severity: 'error', summary: 'Preview niet geladen', detail: 'De factuurtemplate kon niet worden geladen.' })
-    });
+    this.invoiceTemplate = this.defaultOfferteTemplate();
     this.api.settings().subscribe((settings) => this.patch(settings));
     this.form.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -354,8 +388,16 @@ export class SettingsComponent implements OnInit {
       website: settings.website ?? '',
       mailFrom: settings.mailFrom || settings.email || '',
       docusealApiKey: settings.docusealApiKey ?? '',
-      docusealBaseUrl: settings.docusealBaseUrl || 'http://docuseal:3000',
+      docusealBaseUrl: settings.docusealBaseUrl || 'http://lux-docuseal:3000',
       docusealContractTemplateId: settings.docusealContractTemplateId ?? '',
+      docusealHussainEmail: settings.docusealHussainEmail ?? '',
+      docusealHussainSignatureToken: settings.docusealHussainSignatureToken ?? '',
+      googleReviewUrl: settings.googleReviewUrl ?? '',
+      smtpHost: settings.smtpHost || 'smtp.gmail.com',
+      smtpPort: settings.smtpPort || 587,
+      smtpUsername: settings.smtpUsername ?? '',
+      smtpPassword: settings.smtpPassword ?? '',
+      smtpFrom: settings.smtpFrom || settings.mailFrom || settings.email || '',
       generalTerms: settings.generalTerms || 'Alle genoemde afspraken zijn onder voorbehoud van beschikbaarheid en schriftelijke bevestiging.'
     });
     this.refreshPreview();
@@ -365,6 +407,7 @@ export class SettingsComponent implements OnInit {
     if (!this.invoiceTemplate) {
       return;
     }
+    this.invoiceTemplate = this.defaultOfferteTemplate();
     const logoSrc = this.form.controls.logoBase64.value;
     const variables: PreviewVariables = {
       brandColor: this.brandColorValue,
@@ -382,22 +425,27 @@ export class SettingsComponent implements OnInit {
       companyPhone: this.value('phone', '+31 20 000 0000'),
       companyEmail: this.value('email', 'info@partycentrumlux.nl'),
       companyWebsite: this.value('website', 'www.partycentrumlux.nl'),
-      invoiceNumber: 'LUX-2026-001',
-      invoiceDate: '01-06-2026',
-      invoiceDueDate: '15-06-2026',
-      customerName: 'Familie De Vries',
-      customerEmail: 'devries@example.com',
-      customerPhone: '+31 6 12345678',
-      customerAddress: 'Kerkstraat 14, 1017 GM Amsterdam',
-      eventType: 'BRUILOFT',
-      bookingDate: '14-06-2026',
-      guestCount: '120',
-      amount: 'EUR 2.500,00',
-      vatAmount: 'EUR 525,00',
-      totalAmount: 'EUR 3.025,00'
+      KLANT_NAAM: 'Familie De Vries',
+      EVENEMENT_DATUM: '14-06-2026',
+      EVENEMENT_SOORT: 'bruiloft',
+      SUBPRIJZEN_RIJEN: '<tr><td>Zaalhuur</td><td>EUR 2.500,00</td></tr>',
+      SUBTOTAAL: 'EUR 2.500,00',
+      KORTING: 'EUR 0,00',
+      TOTAAL: 'EUR 2.500,00',
+      AANBETALING_BEDRAG: 'EUR 750,00',
+      AANBETALING_DAGEN: '7',
+      RESTANT_BEDRAG: 'EUR 1.750,00',
+      GELDIG_TOT: '28-06-2026',
+      AANBETALING_DATUM: '21-06-2026',
+      RESTANT_DATUM: '31-05-2026',
+      AANTAL_GASTEN: '120',
+      EXTRA_EIGENSCHAPPEN: '<li>Catering inbegrepen</li><li>Parkeren gratis</li>',
+      BETAAL_OMSCHRIJVING: '2026-14-06 - LUX-OFFERTE-2026-0001',
+      ONDERTEKENING_DATUM: '',
+      DOCUMENT_REF: 'LUX-OFFERTE-2026-0001'
     };
-    const html = this.invoiceTemplate.replace(/\{\{\s*([a-zA-Z0-9]+)\s*}}/g, (_match, key: string) =>
-      this.escapeHtml(variables[key] ?? '')
+    const html = this.invoiceTemplate.replace(/\{\{\s*([A-Z0-9_]+)\s*}}/g, (_match, key: string) =>
+      variables[key] ?? ''
     );
     this.previewHtml = this.sanitizer.bypassSecurityTrustHtml(this.fitPreviewHtml(html));
   }
@@ -442,9 +490,33 @@ export class SettingsComponent implements OnInit {
     return html.replace('</style>', `
     @media screen {
       html, body { overflow: hidden; }
-      .page { min-height: 0; width: 100%; }
-      .content { padding: 28px 54px 32px 34px; }
+      .doc { transform: scale(.82); transform-origin: top left; width: 122%; }
     }
   </style>`);
+  }
+
+  private defaultOfferteTemplate(): string {
+    return `
+      <style>
+        body { margin:0; background:#f8fafc; font-family:Arial,sans-serif; color:#231F20; }
+        .doc { background:#fff; min-height:900px; padding:42px; box-sizing:border-box; border-top:10px solid ${this.brandColorValue}; }
+        .brand { color:${this.brandColorValue}; font-weight:900; letter-spacing:.04em; }
+        table { width:100%; border-collapse:collapse; margin:18px 0; }
+        th, td { border-bottom:1px solid #e5e7eb; padding:10px; text-align:left; }
+        .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+        .box { border:1px solid #e5e7eb; border-radius:8px; padding:16px; }
+      </style>
+      <div class="doc">
+        <h1 class="brand">Partycentrum Lux</h1>
+        <h2>Offerte / Huurovereenkomst</h2>
+        <p><strong>Klant:</strong> {{KLANT_NAAM}}<br><strong>Evenement:</strong> {{EVENEMENT_SOORT}} op {{EVENEMENT_DATUM}}<br><strong>Document:</strong> {{DOCUMENT_REF}}</p>
+        <table><thead><tr><th>Dienst</th><th>Bedrag</th></tr></thead><tbody>{{SUBPRIJZEN_RIJEN}}</tbody></table>
+        <div class="grid">
+          <div class="box"><strong>Totaal</strong><br>{{TOTAAL}}<br>Gasten: {{AANTAL_GASTEN}}</div>
+          <div class="box"><strong>Betaling</strong><br>Aanbetaling: {{AANBETALING_BEDRAG}} binnen {{AANBETALING_DAGEN}} dagen<br>Restant: {{RESTANT_BEDRAG}} uiterlijk {{RESTANT_DATUM}}</div>
+        </div>
+        <h3>Inbegrepen</h3><ul>{{EXTRA_EIGENSCHAPPEN}}</ul>
+        <h3>Ondertekening</h3><p>Huurder: {{KLANT_NAAM}}<br>Datum: {{ONDERTEKENING_DATUM}}</p>
+      </div>`;
   }
 }

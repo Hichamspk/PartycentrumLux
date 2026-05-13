@@ -45,7 +45,6 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
               <th>Gasten</th>
               <th>Prijs</th>
               <th>Status</th>
-              <th>Contract</th>
               <th class="w-60">Acties</th>
             </tr>
           </ng-template>
@@ -73,18 +72,12 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
                 ></p-dropdown>
               </td>
               <td>
-                <p-tag [value]="booking.contractStatus" [severity]="contractSeverity(booking.contractStatus)"></p-tag>
-              </td>
-              <td>
                 <div class="flex flex-wrap gap-2">
                   <button class="icon-btn" type="button" (click)="openDetail(booking)" aria-label="Boeking details">
                     <lucide-icon name="eye" [size]="16"></lucide-icon>
                   </button>
                   <button class="icon-btn" type="button" (click)="openEdit(booking)" aria-label="Boeking bewerken">
                     <lucide-icon name="edit" [size]="16"></lucide-icon>
-                  </button>
-                  <button class="icon-btn" type="button" (click)="openInvoice()" aria-label="Facturen openen">
-                    <lucide-icon name="receipt-text" [size]="16"></lucide-icon>
                   </button>
                   @if (auth.isOwner && booking.status !== 'GEANNULEERD') {
                     <button class="icon-btn text-rose-600" type="button" (click)="openCancelDialog(booking)" aria-label="Boeking annuleren">
@@ -167,6 +160,14 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
             <span class="mb-2 block text-sm font-semibold">Aantal gasten</span>
             <p-inputNumber formControlName="guestCount" [min]="1" styleClass="w-full"></p-inputNumber>
           </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold">Korting</span>
+            <p-inputNumber formControlName="korting" mode="currency" currency="EUR" locale="nl-NL" [min]="0" styleClass="w-full"></p-inputNumber>
+          </label>
+          <label class="block">
+            <span class="mb-2 block text-sm font-semibold">Aanbetaling %</span>
+            <p-inputNumber formControlName="aanbetalingPercentage" [min]="0" [max]="100" suffix="%" styleClass="w-full"></p-inputNumber>
+          </label>
 
           <section class="md:col-span-2 rounded-md border border-slate-200 p-4 dark:border-slate-800" formArrayName="subPrijzen">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -196,9 +197,14 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
             </div>
 
             <div class="mt-4 flex justify-end">
-              <div class="rounded-md bg-slate-950 px-4 py-3 text-right text-white dark:bg-white dark:text-slate-950">
-                <p class="text-xs font-semibold uppercase">Totaal excl. BTW</p>
-                <p class="text-2xl font-black">{{ totalPrice | currency:'EUR' }}</p>
+              <div class="w-full max-w-sm rounded-md bg-slate-950 px-4 py-3 text-white dark:bg-white dark:text-slate-950">
+                <div class="flex justify-between text-sm"><span>Subtotaal</span><strong>{{ subtotal | currency:'EUR' }}</strong></div>
+                <div class="flex justify-between text-sm"><span>Korting</span><strong>-{{ discount | currency:'EUR' }}</strong></div>
+                <div class="mt-2 flex justify-between border-t border-white/20 pt-2 text-lg font-black"><span>Totaal</span><span>{{ totalPrice | currency:'EUR' }}</span></div>
+                <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <span>Aanbetaling {{ depositPercentage }}%<br><strong>{{ depositAmount | currency:'EUR' }}</strong></span>
+                  <span>Restant<br><strong>{{ remainderAmount | currency:'EUR' }}</strong></span>
+                </div>
               </div>
             </div>
           </section>
@@ -279,9 +285,8 @@ export class BookingsComponent implements OnInit {
 
   readonly statusOptions: SelectOption<BookingStatus>[] = [
     { label: 'Concept', value: 'CONCEPT' },
-    { label: 'Contract verzonden', value: 'CONTRACT_VERZONDEN' },
-    { label: 'Contract ondertekend', value: 'CONTRACT_ONDERTEKEND' },
-    { label: 'Factuur verzonden', value: 'FACTUUR_VERZONDEN' },
+    { label: 'Offerte verzonden', value: 'OFFERTE_VERZONDEN' },
+    { label: 'Bevestigd', value: 'BEVESTIGD' },
     { label: 'Aanbetaling betaald', value: 'AANBETALING_BETAALD' },
     { label: 'Volledig betaald', value: 'VOLLEDIG_BETAALD' },
     { label: 'Afgerond', value: 'AFGEROND' },
@@ -310,6 +315,8 @@ export class BookingsComponent implements OnInit {
     endTime: ['23:00', Validators.required],
     eventType: ['BRUILOFT' as EventType, Validators.required],
     guestCount: [50, [Validators.required, Validators.min(1)]],
+    korting: [0, [Validators.required, Validators.min(0)]],
+    aanbetalingPercentage: [30, [Validators.required, Validators.min(0), Validators.max(100)]],
     status: ['CONCEPT' as BookingStatus, Validators.required],
     subPrijzen: this.fb.array<FormGroup>([]),
     conditions: [''],
@@ -334,7 +341,27 @@ export class BookingsComponent implements OnInit {
   }
 
   get totalPrice(): number {
+    return Math.max(0, this.subtotal - this.discount);
+  }
+
+  get subtotal(): number {
     return this.subPrijzen.controls.reduce((sum, group) => sum + Number(group.get('prijs')?.value ?? 0), 0);
+  }
+
+  get discount(): number {
+    return Number(this.form.controls.korting.value ?? 0);
+  }
+
+  get depositPercentage(): number {
+    return Number(this.form.controls.aanbetalingPercentage.value ?? 30);
+  }
+
+  get depositAmount(): number {
+    return this.totalPrice * this.depositPercentage / 100;
+  }
+
+  get remainderAmount(): number {
+    return this.totalPrice - this.depositAmount;
   }
 
   get canSave(): boolean {
@@ -377,6 +404,8 @@ export class BookingsComponent implements OnInit {
       endTime: '23:00',
       eventType: 'BRUILOFT',
       guestCount: 50,
+      korting: 0,
+      aanbetalingPercentage: 30,
       status: 'CONCEPT',
       conditions: '',
       notes: ''
@@ -402,6 +431,8 @@ export class BookingsComponent implements OnInit {
       endTime: booking.endTime?.slice(0, 5) ?? '23:00',
       eventType: booking.eventType,
       guestCount: booking.guestCount,
+      korting: booking.korting ?? 0,
+      aanbetalingPercentage: booking.aanbetalingPercentage ?? 30,
       status: booking.status,
       conditions: booking.conditions ?? '',
       notes: booking.notes ?? ''
@@ -481,10 +512,6 @@ export class BookingsComponent implements OnInit {
     void this.router.navigate(['/boekingen', booking.id]);
   }
 
-  openInvoice(): void {
-    void this.router.navigate(['/facturen']);
-  }
-
   openCancelDialog(booking: Booking): void {
     this.bookingToCancel = booking;
     this.cancelReason = '';
@@ -545,20 +572,28 @@ export class BookingsComponent implements OnInit {
     const subPrijzen = raw.subPrijzen.map((subPrijs, index) => ({
       id: subPrijs['id'],
       naam: subPrijs['naam'],
+      bedrag: subPrijs['prijs'],
       prijs: subPrijs['prijs'],
       position: index
     }));
     return {
       id: raw.id,
       customerId,
+      evenementDatum: eventDate,
       eventDate,
       date: eventDate,
       endDate: eventDate,
+      startTijd: raw.startTime,
       startTime: raw.startTime,
+      eindTijd: raw.endTime,
       endTime: raw.endTime,
+      evenementType: raw.eventType,
       eventType: raw.eventType,
+      aantalGasten: raw.guestCount,
       guestCount: raw.guestCount,
-      price: this.totalPrice,
+      price: this.subtotal,
+      korting: raw.korting,
+      aanbetalingPercentage: raw.aanbetalingPercentage,
       status: raw.status,
       subPrijzen,
       properties: Array.from(this.selectedProperties),

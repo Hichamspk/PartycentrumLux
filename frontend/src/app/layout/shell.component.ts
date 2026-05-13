@@ -93,10 +93,8 @@ export class ShellComponent {
     { label: 'Dashboard', route: '/dashboard', icon: 'layout-dashboard' },
     { label: 'Kalender', route: '/kalender', icon: 'calendar-days' },
     { label: 'Boekingen', route: '/boekingen', icon: 'book-open' },
-    { label: 'Contracten', route: '/contracten', icon: 'file-text' },
     { label: 'Klanten', route: '/klanten', icon: 'users' },
-    { label: 'Facturen', route: '/facturen', icon: 'receipt-text' },
-    { label: 'Betalingen', route: '/betalingen', icon: 'credit-card', ownerOnly: true },
+    { label: 'Betalingen', route: '/betalingen', icon: 'credit-card' },
     { label: 'Medewerkers', route: '/medewerkers', icon: 'user-cog', ownerOnly: true },
     { label: 'Instellingen', route: '/instellingen', icon: 'settings', ownerOnly: true }
   ];

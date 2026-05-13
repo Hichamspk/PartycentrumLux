@@ -16,6 +16,7 @@ import org.springframework.web.client.RestClient;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,56 @@ public class DocusealService {
         this.contractTemplateService = contractTemplateService;
         this.restClient = builder.build();
         this.objectMapper = objectMapper;
+    }
+
+    public DocusealSubmissionResult sendOfferte(Booking booking, byte[] pdfBytes, String documentRef) {
+        var settings = companySettingsService.resolve();
+        ensureConfigured(settings);
+        ensureAutoSignerConfigured(settings);
+
+        var docusealUrl = endpoint(settings.getDocusealBaseUrl(), "/api/submissions");
+        var customer = booking.getCustomer();
+        var pdfBase64 = Base64.getEncoder().encodeToString(pdfBytes);
+
+        var verhuurder = new LinkedHashMap<String, Object>();
+        verhuurder.put("role", "Verhuurder");
+        verhuurder.put("email", settings.getDocusealHussainEmail());
+        verhuurder.put("name", "Hussain Siddiqui");
+        verhuurder.put("completed", true);
+        verhuurder.put("values", Map.of("signature", settings.getDocusealHussainSignatureToken()));
+
+        var huurder = new LinkedHashMap<String, Object>();
+        huurder.put("role", "Huurder");
+        huurder.put("email", customer.getEmail());
+        huurder.put("name", customer.getNaam());
+        huurder.put("message", Map.of(
+                "subject", "Uw offerte - Partycentrum Lux",
+                "body", "Geachte " + customer.getNaam() + ",\n\nHierbij ontvangt u uw offerte van Partycentrum Lux. Klik op de onderstaande knop om de offerte te bekijken en digitaal te ondertekenen.\n\nMet vriendelijke groet,\nHussain Siddiqui\nPartycentrum Lux"
+        ));
+
+        var document = new LinkedHashMap<String, Object>();
+        document.put("name", "Offerte-" + documentRef);
+        document.put("file", pdfBase64);
+
+        var body = new LinkedHashMap<String, Object>();
+        body.put("send_email", true);
+        body.put("submitters", List.of(verhuurder, huurder));
+        body.put("documents", List.of(document));
+
+        try {
+            var response = postForObject(docusealUrl, settings.getDocusealApiKey(), body);
+            var submissionId = extractSubmissionId(response);
+            if (submissionId == null || submissionId.isBlank()) {
+                throw new ApiException(HttpStatus.BAD_GATEWAY, "DocuSeal gaf geen submission id terug.");
+            }
+            return new DocusealSubmissionResult(submissionId, Objects.toString(extractSigningUrl(response), ""));
+        } catch (ApiException exception) {
+            log.error("DocuSeal error: {}", exception.getMessage(), exception);
+            throw exception;
+        } catch (RuntimeException exception) {
+            log.error("DocuSeal error: {}", exception.getMessage(), exception);
+            throw new ApiException(HttpStatus.BAD_GATEWAY, "Offerte kon niet naar DocuSeal worden verstuurd: " + exception.getMessage());
+        }
     }
 
     public DocusealSubmissionResult sendContract(Booking booking, String html) {
@@ -134,6 +185,15 @@ public class DocusealService {
         }
         if (settings.getDocusealBaseUrl() == null || settings.getDocusealBaseUrl().isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "DocuSeal base URL ontbreekt in Instellingen.");
+        }
+    }
+
+    private void ensureAutoSignerConfigured(CompanySettings settings) {
+        if (settings.getDocusealHussainEmail() == null || settings.getDocusealHussainEmail().isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Hussain e-mailadres ontbreekt in Instellingen.");
+        }
+        if (settings.getDocusealHussainSignatureToken() == null || settings.getDocusealHussainSignatureToken().isBlank()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Hussain signature token ontbreekt in Instellingen.");
         }
     }
 

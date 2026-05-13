@@ -35,9 +35,7 @@ public class CustomerService {
 
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
-        var customer = new Customer();
-        apply(customer, request);
-        return toResponse(customerRepository.save(customer));
+        return toResponse(createEntity(request));
     }
 
     @Transactional
@@ -55,6 +53,12 @@ public class CustomerService {
     public Customer getCustomer(Long id) {
         return customerRepository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Klant niet gevonden."));
+    }
+
+    public Customer createEntity(CustomerRequest request) {
+        var customer = new Customer();
+        apply(customer, request);
+        return customerRepository.save(customer);
     }
 
     public CustomerResponse toResponse(Customer customer) {

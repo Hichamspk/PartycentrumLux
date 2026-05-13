@@ -4,6 +4,7 @@ import jakarta.mail.MessagingException;
 import nl.partycentrum.lux.config.MailProperties;
 import nl.partycentrum.lux.domain.Booking;
 import nl.partycentrum.lux.domain.Invoice;
+import nl.partycentrum.lux.domain.PaymentPart;
 import org.springframework.core.io.FileSystemResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -126,6 +128,90 @@ public class MailService {
         sendHtml(customer.getEmail(), "Contract ondertekend - Partycentrum Lux", html);
     }
 
+    public void sendOfferteSignedConfirmation(Booking booking) {
+        var customer = booking.getCustomer();
+        var settings = companySettingsService.resolve();
+        var html = layout(
+                "Offerte ondertekend",
+                """
+                        <p>Beste %s,</p>
+                        <p>Uw offerte voor <strong>%s</strong> is digitaal ondertekend. Daarmee is de boeking bevestigd.</p>
+                        <p><strong>Datum:</strong> %s<br><strong>Tijd:</strong> %s - %s<br><strong>Totaalbedrag:</strong> %s</p>
+                        <p><strong>Aanbetaling:</strong> %s uiterlijk %s<br><strong>IBAN:</strong> %s</p>
+                        """.formatted(
+                        customer.getNaam(),
+                        booking.getEventType().name().toLowerCase(),
+                        booking.getEventDate().format(DATE),
+                        booking.getStartTime(),
+                        booking.getEndTime(),
+                        money(booking.getTotaal()),
+                        money(booking.getAanbetalingBedrag()),
+                        booking.getAanbetalingDeadline() == null ? "binnen 7 dagen na ondertekening" : booking.getAanbetalingDeadline().format(DATE),
+                        settings.getIban()
+                )
+        );
+        sendHtml(customer.getEmail(), "Offerte ondertekend - Partycentrum Lux", html);
+    }
+
+    public void sendAanbetalingReminder(Booking booking) {
+        var customer = booking.getCustomer();
+        var settings = companySettingsService.resolve();
+        var html = layout(
+                "Betalingsherinnering aanbetaling",
+                """
+                        <p>Beste %s,</p>
+                        <p>Een vriendelijke herinnering voor de aanbetaling van uw boeking bij Partycentrum Lux.</p>
+                        <p><strong>Bedrag:</strong> %s<br><strong>Deadline:</strong> %s<br><strong>IBAN:</strong> %s</p>
+                        """.formatted(
+                        customer.getNaam(),
+                        money(booking.getAanbetalingBedrag()),
+                        booking.getAanbetalingDeadline() == null ? "-" : booking.getAanbetalingDeadline().format(DATE),
+                        settings.getIban()
+                )
+        );
+        sendHtml(customer.getEmail(), "Betalingsherinnering aanbetaling - Partycentrum Lux", html);
+    }
+
+    public void sendRestantReminder(Booking booking) {
+        var customer = booking.getCustomer();
+        var settings = companySettingsService.resolve();
+        var html = layout(
+                "Betalingsherinnering restant",
+                """
+                        <p>Beste %s,</p>
+                        <p>Een vriendelijke herinnering voor het resterende bedrag van uw boeking.</p>
+                        <p><strong>Bedrag:</strong> %s<br><strong>Deadline:</strong> %s<br><strong>IBAN:</strong> %s</p>
+                        """.formatted(
+                        customer.getNaam(),
+                        money(booking.getRestantBedrag()),
+                        booking.getRestantDeadline() == null ? "-" : booking.getRestantDeadline().format(DATE),
+                        settings.getIban()
+                )
+        );
+        sendHtml(customer.getEmail(), "Betalingsherinnering restant - Partycentrum Lux", html);
+    }
+
+    public void sendPaymentConfirmation(Booking booking, PaymentPart part) {
+        var customer = booking.getCustomer();
+        var amount = part == PaymentPart.AANBETALING ? booking.getAanbetalingBedrag() : booking.getRestantBedrag();
+        var paidDate = part == PaymentPart.AANBETALING ? booking.getAanbetalingBetaaldDatum() : booking.getRestantBetaaldDatum();
+        var label = part == PaymentPart.AANBETALING ? "aanbetaling" : "restantbetaling";
+        var html = layout(
+                "Betaling ontvangen",
+                """
+                        <p>Beste %s,</p>
+                        <p>Hartelijk dank. Wij hebben uw %s ontvangen.</p>
+                        <p><strong>Bedrag:</strong> %s<br><strong>Betaaldatum:</strong> %s</p>
+                        """.formatted(
+                        customer.getNaam(),
+                        label,
+                        money(amount),
+                        paidDate == null ? LocalDate.now().format(DATE) : paidDate.format(DATE)
+                )
+        );
+        sendHtml(customer.getEmail(), "Betaling ontvangen - Partycentrum Lux", html);
+    }
+
     public void sendInvoice(Invoice invoice) {
         var customer = invoice.getBooking().getCustomer();
         var html = layout(
@@ -177,6 +263,7 @@ public class MailService {
 
     public void sendEventReminder(Booking booking) {
         var customer = booking.getCustomer();
+        var settings = companySettingsService.resolve();
         var html = layout(
                 "Uw evenement komt eraan",
                 """
@@ -190,12 +277,10 @@ public class MailService {
                         booking.getStartTime(),
                         booking.getEndTime(),
                         booking.getGuestCount(),
-                        textBlock(booking.getConditions() == null || booking.getConditions().isBlank()
-                                ? "Geen aanvullende voorwaarden."
-                                : booking.getConditions())
+                        textBlock(settings.getGeneralTerms())
                 )
         );
-        sendHtml(customer.getEmail(), "Herinnering evenement - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Uw evenement is over 7 dagen - Partycentrum Lux", html);
     }
 
     public void sendThankYou(Booking booking) {
@@ -204,15 +289,17 @@ public class MailService {
 
     public void sendReviewRequest(Booking booking) {
         var customer = booking.getCustomer();
+        var settings = companySettingsService.resolve();
         var html = layout(
                 "Bedankt voor uw bezoek",
                 """
                         <p>Beste %s,</p>
                         <p>Bedankt dat u uw evenement bij Partycentrum Lux heeft gevierd. We hopen dat u een prachtige dag heeft gehad.</p>
                         <p>Wilt u uw ervaring met ons delen? Uw review helpt nieuwe gasten bij het kiezen van onze locatie.</p>
-                        """.formatted(customer.getName())
+                        <p><a href="%s" style="color:#0f172a;font-weight:700;">Laat een Google review achter</a></p>
+                        """.formatted(customer.getNaam(), settings.getGoogleReviewUrl())
         );
-        sendHtml(customer.getEmail(), "Review verzoek - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Bedankt voor uw evenement - Partycentrum Lux", html);
     }
 
     public void sendCancellation(Booking booking) {

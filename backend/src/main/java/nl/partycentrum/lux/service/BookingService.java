@@ -184,10 +184,12 @@ public class BookingService {
         if (guestCount == null || guestCount < 1) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Aantal gasten is verplicht.");
         }
-        if (request.customerId() == null) {
+        if (request.customerId() == null && request.customer() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Klant is verplicht.");
         }
-        booking.setCustomer(customerService.getCustomer(request.customerId()));
+        booking.setCustomer(request.customerId() == null
+                ? customerService.createEntity(request.customer())
+                : customerService.getCustomer(request.customerId()));
         booking.setEventDate(eventDate);
         booking.setStartTime(startTime);
         booking.setEndTime(endTime);

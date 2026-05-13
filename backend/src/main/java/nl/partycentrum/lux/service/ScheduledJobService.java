@@ -1,70 +1,94 @@
 package nl.partycentrum.lux.service;
 
 import nl.partycentrum.lux.domain.BookingStatus;
-import nl.partycentrum.lux.domain.InvoiceStatus;
 import nl.partycentrum.lux.repository.BookingRepository;
-import nl.partycentrum.lux.repository.InvoiceRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Service
 public class ScheduledJobService {
 
     private final BookingRepository bookingRepository;
-    private final InvoiceRepository invoiceRepository;
-    private final InvoiceService invoiceService;
     private final MailService mailService;
 
     public ScheduledJobService(
             BookingRepository bookingRepository,
-            InvoiceRepository invoiceRepository,
-            InvoiceService invoiceService,
             MailService mailService
     ) {
         this.bookingRepository = bookingRepository;
-        this.invoiceRepository = invoiceRepository;
-        this.invoiceService = invoiceService;
         this.mailService = mailService;
     }
 
     @Transactional
-    @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
     public void runDailyJobs() {
         var today = LocalDate.now();
         sendPaymentReminders(today);
         sendEventReminders(today);
         autoFinishFullyPaidBookings(today);
-        sendReviewRequests(today);
-        invoiceService.markOverdueInvoices();
     }
 
     @Transactional
     public void sendPaymentReminders(LocalDate today) {
-        invoiceRepository.findByStatusAndDueDate(InvoiceStatus.ONBETAALD, today.plusDays(3))
-                .forEach(mailService::sendPaymentReminder);
+        sendAanbetalingReminders(today);
+        sendRestantReminders(today);
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
+    public void scheduledAanbetalingReminders() {
+        sendAanbetalingReminders(LocalDate.now());
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
+    public void scheduledRestantReminders() {
+        sendRestantReminders(LocalDate.now());
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
+    public void scheduledEventReminders() {
+        sendEventReminders(LocalDate.now());
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
+    public void scheduledAutoFinishFullyPaidBookings() {
+        autoFinishFullyPaidBookings(LocalDate.now());
+    }
+
+    @Transactional
+    public void sendAanbetalingReminders(LocalDate today) {
+        var reminderDate = today.plusDays(3);
+        bookingRepository.findAll().stream()
+                .filter(booking -> booking.getStatus() == BookingStatus.BEVESTIGD)
+                .filter(booking -> !booking.isAanbetalingBetaald())
+                .filter(booking -> reminderDate.equals(booking.getAanbetalingDeadline()))
+                .forEach(mailService::sendAanbetalingReminder);
+    }
+
+    @Transactional
+    public void sendRestantReminders(LocalDate today) {
+        var reminderDate = today.plusDays(3);
+        bookingRepository.findAll().stream()
+                .filter(booking -> booking.isAanbetalingBetaald())
+                .filter(booking -> !booking.isRestantBetaald())
+                .filter(booking -> reminderDate.equals(booking.getRestantDeadline()))
+                .forEach(mailService::sendRestantReminder);
     }
 
     @Transactional
     public void sendEventReminders(LocalDate today) {
-        bookingRepository.findByEventDateAndStatusIn(
-                        today.plusDays(7),
-                        List.of(
-                                BookingStatus.BEVESTIGD,
-                                BookingStatus.AANBETALING_BETAALD,
-                                BookingStatus.VOLLEDIG_BETAALD
-                        )
-                )
+        bookingRepository.findByEventDateAndStatus(today.plusDays(7), BookingStatus.VOLLEDIG_BETAALD)
                 .forEach(mailService::sendEventReminder);
     }
 
     @Transactional
     public void sendReviewRequests(LocalDate today) {
-        bookingRepository.findByEventDateAndStatus(today.minusDays(1), BookingStatus.AFGEROND)
-                .forEach(mailService::sendReviewRequest);
+        // Review requests are intentionally sent immediately when the restantbetaling is marked as paid.
     }
 
     @Transactional

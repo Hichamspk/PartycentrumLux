@@ -46,7 +46,7 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
               <th>Gasten</th>
               <th>Prijs</th>
               <th>Status</th>
-              <th class="w-60">Acties</th>
+              <th class="min-w-52 text-right">Acties</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-booking>
@@ -72,8 +72,8 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
                   (onChange)="changeStatus(booking, $event.value)"
                 ></p-dropdown>
               </td>
-              <td>
-                <div class="flex flex-wrap gap-2">
+              <td class="min-w-52">
+                <div class="flex flex-nowrap justify-end gap-2">
                   <button class="icon-btn" type="button" (click)="openDetail(booking)" aria-label="Boeking details">
                     <lucide-icon name="eye" [size]="16"></lucide-icon>
                   </button>

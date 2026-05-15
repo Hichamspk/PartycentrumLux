@@ -9,30 +9,30 @@ import { AuthService } from '../core/auth.service';
   standalone: true,
   imports: [...PRIME_IMPORTS],
   template: `
-    <div class="min-h-screen bg-slate-950 px-4 py-10 text-white">
+    <div class="min-h-screen bg-[#F5F5F5] px-4 py-10 text-[#111111]">
       <div class="mx-auto flex min-h-[calc(100vh-5rem)] max-w-6xl items-center justify-center">
-        <div class="grid w-full overflow-hidden rounded-md border border-white/10 bg-white shadow-2xl md:grid-cols-[1.05fr_0.95fr]">
-          <section class="hidden bg-slate-900 p-10 text-white md:flex md:flex-col md:justify-between">
+        <div class="grid w-full overflow-hidden rounded-xl border border-[#E5E5E5] bg-white shadow-soft md:grid-cols-[1.05fr_0.95fr]">
+          <section class="hidden bg-[#111111] p-10 text-white md:flex md:flex-col md:justify-between">
             <div>
-              <div class="flex h-12 w-12 items-center justify-center rounded-md bg-white text-xl font-black text-slate-950">L</div>
-              <h1 class="mt-8 text-4xl font-black leading-tight">Partycentrum Lux</h1>
-              <p class="mt-4 max-w-md text-base leading-7 text-slate-300">
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-xl font-semibold text-[#DCAB46]">L</div>
+              <h1 class="mt-8 text-4xl font-semibold leading-tight">Partycentrum Lux</h1>
+              <p class="mt-4 max-w-md text-base leading-7 text-white/70">
                 Beheer boekingen, klanten, offertes en betalingen vanuit een rustige, snelle werkruimte.
               </p>
             </div>
-            <div class="grid grid-cols-3 gap-3 text-sm text-slate-300">
-              <div class="rounded-md border border-white/10 p-3">Bruiloften</div>
-              <div class="rounded-md border border-white/10 p-3">Verjaardagen</div>
-              <div class="rounded-md border border-white/10 p-3">Zakelijk</div>
+            <div class="grid grid-cols-3 gap-3 text-sm text-white/70">
+              <div class="rounded-lg border border-white/10 p-3">Bruiloften</div>
+              <div class="rounded-lg border border-white/10 p-3">Verjaardagen</div>
+              <div class="rounded-lg border border-white/10 p-3">Zakelijk</div>
             </div>
           </section>
 
-          <section class="p-6 text-slate-950 sm:p-10">
+          <section class="p-6 text-[#111111] sm:p-10">
             <div class="mb-8 md:hidden">
-              <div class="flex h-12 w-12 items-center justify-center rounded-md bg-slate-950 text-xl font-black text-white">L</div>
-              <h1 class="mt-4 text-3xl font-black">Partycentrum Lux</h1>
+              <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-[#111111] text-xl font-semibold text-[#DCAB46]">L</div>
+              <h1 class="mt-4 text-3xl font-semibold">Partycentrum Lux</h1>
             </div>
-            <h2 class="text-2xl font-bold">Inloggen</h2>
+            <h2 class="text-2xl font-semibold">Inloggen</h2>
             <p class="muted mt-2">Gebruik uw medewerkeraccount om verder te gaan.</p>
 
             <form class="mt-8 space-y-5" [formGroup]="form" (ngSubmit)="submit()">

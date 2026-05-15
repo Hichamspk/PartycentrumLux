@@ -137,12 +137,11 @@ export class ContractsComponent implements OnInit {
   bookingSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     return {
       CONCEPT: 'secondary',
-      CONTRACT_VERZONDEN: 'info',
-      CONTRACT_ONDERTEKEND: 'info',
-      FACTUUR_VERZONDEN: 'warn',
-      AANBETALING_BETAALD: 'warn',
+      OFFERTE_VERZONDEN: 'info',
+      BEVESTIGD: 'success',
+      AANBETALING_BETAALD: 'success',
       VOLLEDIG_BETAALD: 'success',
-      AFGEROND: 'success',
+      AFGEROND: 'secondary',
       GEANNULEERD: 'danger'
     }[status] as 'success' | 'info' | 'warn' | 'danger' | 'secondary';
   }

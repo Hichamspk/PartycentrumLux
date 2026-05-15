@@ -26,8 +26,8 @@ interface CalendarDay {
 
       <div class="flex flex-wrap gap-3 text-sm">
         <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-blue-600"></span>Bezichtigingen</span>
-        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-amber-500"></span>Boekingen gepland</span>
-        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-emerald-600"></span>Boekingen bevestigd/betaald</span>
+        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-[#DCAB46]"></span>Boekingen gepland</span>
+        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-[#22C55E]"></span>Boekingen bevestigd/betaald</span>
       </div>
 
       <div class="surface-panel overflow-hidden rounded-md">
@@ -138,8 +138,8 @@ export class CalendarComponent implements OnInit {
 
   eventClass(booking: Booking): string {
     return ['BEVESTIGD', 'AANBETALING_BETAALD', 'VOLLEDIG_BETAALD', 'AFGEROND'].includes(booking.status)
-      ? 'bg-emerald-600'
-      : 'bg-amber-500';
+      ? 'bg-[#22C55E]'
+      : 'bg-[#DCAB46]';
   }
 
   openBezichtiging(bezichtiging: Bezichtiging): void {
@@ -150,10 +150,10 @@ export class CalendarComponent implements OnInit {
     return {
       CONCEPT: 'secondary',
       OFFERTE_VERZONDEN: 'info',
-      BEVESTIGD: 'info',
-      AANBETALING_BETAALD: 'warn',
+      BEVESTIGD: 'success',
+      AANBETALING_BETAALD: 'success',
       VOLLEDIG_BETAALD: 'success',
-      AFGEROND: 'success',
+      AFGEROND: 'secondary',
       GEANNULEERD: 'danger'
     }[status] as 'success' | 'info' | 'warn' | 'danger' | 'secondary';
   }

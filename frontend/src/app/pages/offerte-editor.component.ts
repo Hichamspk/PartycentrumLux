@@ -103,7 +103,7 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
           </section>
         </div>
 
-        <div class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:left-72">
+        <div class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 md:left-[240px]">
           <div class="mx-auto flex max-w-7xl flex-col justify-end gap-2 sm:flex-row">
             <button pButton type="button" label="Opslaan als concept" icon="pi pi-save" class="p-button-secondary" [loading]="saving" (click)="saveConcept()"></button>
             <button pButton type="button" label="Verstuur naar klant" icon="pi pi-send" [loading]="sending" (click)="send()"></button>

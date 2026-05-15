@@ -5,7 +5,6 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../core/api.service';
-import { ThemeService } from '../core/theme.service';
 import { CompanySettings, MailLog, MailLogStatus, MailLogType, SelectOption } from '../core/models';
 import { PRIME_IMPORTS } from '../shared/prime-imports';
 
@@ -204,12 +203,9 @@ type PreviewVariables = Record<string, string>;
           </section>
 
           <section class="grid gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <h2 class="text-lg font-bold text-slate-950 dark:text-white">Weergave</h2>
-                <p class="muted">Wissel de dashboardweergave.</p>
-              </div>
-              <p-inputSwitch [ngModel]="theme.darkMode()" [ngModelOptions]="{ standalone: true }" (onChange)="theme.setDarkMode($event.checked)"></p-inputSwitch>
+            <div>
+              <h2 class="text-lg font-bold text-slate-950 dark:text-white">Weergave</h2>
+              <p class="muted">De lichte dashboardweergave is actief voor alle gebruikers.</p>
             </div>
           </section>
 
@@ -312,6 +308,8 @@ export class SettingsComponent implements OnInit {
   readonly mailTypeOptions: SelectOption<MailLogType | null>[] = [
     { label: 'Alle types', value: null },
     { label: 'Offerte verzonden', value: 'OFFERTE_VERZONDEN' },
+    { label: 'Bezichtiging bevestiging', value: 'BEZICHTIGING_BEVESTIGING' },
+    { label: 'Bezichtiging herinnering', value: 'BEZICHTIGING_HERINNERING' },
     { label: 'Bevestigingsmail', value: 'BEVESTIGINGSMAIL' },
     { label: 'Aanbetaling herinnering', value: 'BETALING_HERINNERING_AANBETALING' },
     { label: 'Restant herinnering', value: 'BETALING_HERINNERING_RESTANT' },
@@ -355,7 +353,6 @@ export class SettingsComponent implements OnInit {
   });
 
   constructor(
-    public readonly theme: ThemeService,
     private readonly api: ApiService,
     private readonly messages: MessageService,
     private readonly sanitizer: DomSanitizer

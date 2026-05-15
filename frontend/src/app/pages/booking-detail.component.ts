@@ -305,10 +305,10 @@ export class BookingDetailComponent implements OnInit {
     return ({
       CONCEPT: 'secondary',
       OFFERTE_VERZONDEN: 'info',
-      BEVESTIGD: 'warn',
-      AANBETALING_BETAALD: 'warn',
+      BEVESTIGD: 'success',
+      AANBETALING_BETAALD: 'success',
       VOLLEDIG_BETAALD: 'success',
-      AFGEROND: 'success',
+      AFGEROND: 'secondary',
       GEANNULEERD: 'danger'
     } as const)[status];
   }

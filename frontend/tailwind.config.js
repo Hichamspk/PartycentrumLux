@@ -6,16 +6,21 @@ module.exports = {
     extend: {
       colors: {
         lux: {
-          ink: '#111827',
-          muted: '#64748b',
-          line: '#e5e7eb',
-          blue: '#2563eb',
-          mint: '#0f9f6e',
-          rose: '#e11d48'
+          ink: '#111111',
+          muted: '#666666',
+          subtle: '#999999',
+          line: '#E5E5E5',
+          page: '#F5F5F5',
+          sidebar: '#F7F7F7',
+          gold: '#DCAB46',
+          success: '#22C55E',
+          warning: '#F59E0B',
+          danger: '#EF4444'
         }
       },
       boxShadow: {
-        soft: '0 16px 50px rgba(15, 23, 42, 0.08)'
+        soft: '0 1px 3px rgba(0, 0, 0, 0.06)',
+        hover: '0 4px 12px rgba(0, 0, 0, 0.08)'
       }
     }
   },

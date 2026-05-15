@@ -3,7 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
-import { Booking, BookingStatus, Offerte, PaymentPart, PaymentSchedule, PaymentState } from '../core/models';
+import { Booking, BookingStatus, MailLog, Offerte, PaymentPart, PaymentSchedule, PaymentState } from '../core/models';
 import { PRIME_IMPORTS } from '../shared/prime-imports';
 
 @Component({
@@ -92,12 +92,9 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
               <p class="muted">De getekende offerte is de bevestiging en factuur.</p>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button pButton type="button" label="Genereer offerte" icon="pi pi-file-pdf" (click)="generateOfferte()"></button>
+              <button pButton type="button" label="Genereer offerte" icon="pi pi-file-pdf" (click)="openOfferteEditor()"></button>
               @if (offerte?.pdfPath) {
                 <button pButton type="button" label="Download" icon="pi pi-download" class="p-button-secondary" (click)="downloadOfferte()"></button>
-                @if (auth.isOwner && booking.status !== 'BEVESTIGD') {
-                  <button pButton type="button" label="Verstuur naar klant" icon="pi pi-send" (click)="sendOfferte()"></button>
-                }
               }
             </div>
           </div>
@@ -117,9 +114,6 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
             </div>
           </div>
 
-          @if (previewHtml) {
-            <iframe title="Offerte preview" class="mt-4 h-[760px] w-full rounded-md border border-slate-200 bg-white dark:border-slate-800" [srcdoc]="previewHtml"></iframe>
-          }
         </section>
 
         <section class="surface-panel rounded-md p-5">
@@ -144,6 +138,46 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
                 }
               </div>
             }
+          </div>
+        </section>
+
+        <section class="surface-panel rounded-md p-5">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold">Mail log</h2>
+              <p class="muted">Alle mails die voor deze boeking zijn geregistreerd.</p>
+            </div>
+          </div>
+          <div class="mt-4 overflow-x-auto">
+            <p-table [value]="mailLogs" responsiveLayout="scroll">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Type</th>
+                  <th>Ontvanger</th>
+                  <th>Verzonden op</th>
+                  <th>Status</th>
+                  <th class="w-32">Actie</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-log>
+                <tr>
+                  <td>{{ label(log.type) }}</td>
+                  <td>{{ log.ontvangerEmail }}</td>
+                  <td>{{ log.verzondenOp | date:'dd MMM yyyy HH:mm' }}</td>
+                  <td><p-tag [value]="log.status" [severity]="mailSeverity(log.status)"></p-tag></td>
+                  <td>
+                    @if (log.status === 'MISLUKT') {
+                      <button pButton type="button" label="Opnieuw" size="small" class="p-button-secondary" (click)="resendMail(log)"></button>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="py-6 text-center text-sm text-slate-500">Nog geen mails geregistreerd.</td>
+                </tr>
+              </ng-template>
+            </p-table>
           </div>
         </section>
 
@@ -172,7 +206,7 @@ export class BookingDetailComponent implements OnInit {
   booking: Booking | null = null;
   offerte: Offerte | null = null;
   payments: PaymentSchedule[] = [];
-  previewHtml = '';
+  mailLogs: MailLog[] = [];
   cancelDialogOpen = false;
   cancelReason = '';
   private bookingId = 0;
@@ -194,19 +228,12 @@ export class BookingDetailComponent implements OnInit {
   load(): void {
     this.api.booking(this.bookingId).subscribe((booking) => this.booking = booking);
     this.api.offerte(this.bookingId).subscribe((offerte) => this.offerte = offerte);
-    this.api.offertePreview(this.bookingId).subscribe((html) => this.previewHtml = html);
     this.api.bookingPayments(this.bookingId).subscribe((payments) => this.payments = payments);
+    this.api.bookingMailLogs(this.bookingId).subscribe((mailLogs) => this.mailLogs = mailLogs);
   }
 
-  generateOfferte(): void {
-    this.api.generateOfferte(this.bookingId).subscribe({
-      next: (offerte) => {
-        this.offerte = offerte;
-        this.messages.add({ severity: 'success', summary: 'Offerte gegenereerd', detail: 'PDF is aangemaakt.' });
-        this.load();
-      },
-      error: (error) => this.messages.add({ severity: 'error', summary: 'Niet gegenereerd', detail: error.error?.message ?? 'Controleer de boeking.' })
-    });
+  openOfferteEditor(): void {
+    void this.router.navigate(['/boekingen', this.bookingId, 'offerte']);
   }
 
   sendOfferte(): void {
@@ -222,6 +249,16 @@ export class BookingDetailComponent implements OnInit {
 
   downloadOfferte(): void {
     this.api.downloadOfferte(this.bookingId).subscribe((blob) => this.downloadBlob(blob, `offerte-${this.bookingId}.pdf`));
+  }
+
+  resendMail(log: MailLog): void {
+    this.api.resendMailLog(log.id).subscribe({
+      next: () => {
+        this.messages.add({ severity: 'success', summary: 'Opnieuw verzonden', detail: 'De mail is opnieuw verwerkt.' });
+        this.load();
+      },
+      error: (error) => this.messages.add({ severity: 'error', summary: 'Niet verzonden', detail: error.error?.message ?? 'Controleer de instellingen.' })
+    });
   }
 
   confirmMarkPaid(type: PaymentPart): void {
@@ -285,6 +322,14 @@ export class BookingDetailComponent implements OnInit {
       BETAALD: 'success',
       VERLOPEN: 'danger'
     } as const)[status];
+  }
+
+  mailSeverity(status: string): 'success' | 'danger' {
+    return status === 'VERZONDEN' ? 'success' : 'danger';
+  }
+
+  label(value: string): string {
+    return value.replaceAll('_', ' ').toLowerCase();
   }
 
   private downloadBlob(blob: Blob, filename: string): void {

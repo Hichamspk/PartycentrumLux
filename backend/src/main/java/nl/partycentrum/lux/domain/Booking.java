@@ -119,6 +119,9 @@ public class Booking extends BaseEntity {
     @Column(name = "offerte_pdf_path")
     private String offertePdfPath;
 
+    @Column(name = "offerte_customer_message", columnDefinition = "TEXT")
+    private String offerteCustomerMessage;
+
     @Column(name = "annulerings_reden", columnDefinition = "TEXT")
     private String annuleringsReden;
 
@@ -451,6 +454,14 @@ public class Booking extends BaseEntity {
 
     public void setOffertePdfPath(String offertePdfPath) {
         this.offertePdfPath = offertePdfPath;
+    }
+
+    public String getOfferteCustomerMessage() {
+        return offerteCustomerMessage;
+    }
+
+    public void setOfferteCustomerMessage(String offerteCustomerMessage) {
+        this.offerteCustomerMessage = offerteCustomerMessage;
     }
 
     public String getAnnuleringsReden() {

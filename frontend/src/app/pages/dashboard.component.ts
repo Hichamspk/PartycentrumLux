@@ -18,6 +18,21 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
         <p-tag [value]="auth.role === 'OWNER' ? 'Eigenaar' : 'Medewerker'" severity="info"></p-tag>
       </div>
 
+      <div class="grid gap-3 md:grid-cols-3">
+        <a routerLink="/boekingen" class="surface-panel flex items-center gap-3 rounded-md p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+          <lucide-icon name="plus" [size]="18"></lucide-icon>
+          <span class="font-semibold">Nieuwe boeking</span>
+        </a>
+        <a routerLink="/bezichtigingen" class="surface-panel flex items-center gap-3 rounded-md p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+          <lucide-icon name="calendar-days" [size]="18"></lucide-icon>
+          <span class="font-semibold">Nieuwe bezichtiging</span>
+        </a>
+        <a routerLink="/klanten" class="surface-panel flex items-center gap-3 rounded-md p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+          <lucide-icon name="users" [size]="18"></lucide-icon>
+          <span class="font-semibold">Voeg klant toe</span>
+        </a>
+      </div>
+
       @if (auth.isOwner && stats) {
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <article class="surface-panel rounded-md p-5">

@@ -4,10 +4,14 @@ import jakarta.mail.MessagingException;
 import nl.partycentrum.lux.config.MailProperties;
 import nl.partycentrum.lux.domain.Booking;
 import nl.partycentrum.lux.domain.Invoice;
+import nl.partycentrum.lux.domain.MailLogType;
 import nl.partycentrum.lux.domain.PaymentPart;
+import nl.partycentrum.lux.exception.ApiException;
+import nl.partycentrum.lux.repository.BookingRepository;
 import org.springframework.core.io.FileSystemResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -31,15 +35,21 @@ public class MailService {
     private final JavaMailSender mailSender;
     private final MailProperties mailProperties;
     private final CompanySettingsService companySettingsService;
+    private final MailLogService mailLogService;
+    private final BookingRepository bookingRepository;
 
     public MailService(
             JavaMailSender mailSender,
             MailProperties mailProperties,
-            CompanySettingsService companySettingsService
+            CompanySettingsService companySettingsService,
+            MailLogService mailLogService,
+            BookingRepository bookingRepository
     ) {
         this.mailSender = mailSender;
         this.mailProperties = mailProperties;
         this.companySettingsService = companySettingsService;
+        this.mailLogService = mailLogService;
+        this.bookingRepository = bookingRepository;
     }
 
     public void sendBookingConfirmation(Booking booking) {
@@ -60,7 +70,7 @@ public class MailService {
                         money(booking.getPrice())
                 )
         );
-        sendHtml(customer.getEmail(), subject, html);
+        sendHtml(customer.getEmail(), subject, html, MailLogType.BEVESTIGINGSMAIL, booking.getId(), null);
     }
 
     public void sendPaymentReminder(Invoice invoice) {
@@ -79,7 +89,7 @@ public class MailService {
                         invoice.getDueDate().format(DATE)
                 )
         );
-        sendHtml(customer.getEmail(), "Betalingsherinnering " + invoice.getInvoiceNumber(), html);
+        sendHtml(customer.getEmail(), "Betalingsherinnering " + invoice.getInvoiceNumber(), html, reminderType(invoice), invoice.getBooking().getId(), null);
     }
 
     public void sendContractSigningRequest(Booking booking, String signingUrl) {
@@ -106,7 +116,7 @@ public class MailService {
                         signingUrl
                 )
         );
-        sendHtml(customer.getEmail(), "Uw contract - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Uw contract - Partycentrum Lux", html, MailLogType.OFFERTE_VERZONDEN, booking.getId(), null);
     }
 
     public void sendContractSignedConfirmation(Booking booking) {
@@ -125,7 +135,7 @@ public class MailService {
                         booking.getGuestCount()
                 )
         );
-        sendHtml(customer.getEmail(), "Contract ondertekend - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Contract ondertekend - Partycentrum Lux", html, MailLogType.BEVESTIGINGSMAIL, booking.getId(), null);
     }
 
     public void sendOfferteSignedConfirmation(Booking booking) {
@@ -150,7 +160,7 @@ public class MailService {
                         settings.getIban()
                 )
         );
-        sendHtml(customer.getEmail(), "Offerte ondertekend - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Offerte ondertekend - Partycentrum Lux", html, MailLogType.BEVESTIGINGSMAIL, booking.getId(), null);
     }
 
     public void sendAanbetalingReminder(Booking booking) {
@@ -169,7 +179,7 @@ public class MailService {
                         settings.getIban()
                 )
         );
-        sendHtml(customer.getEmail(), "Betalingsherinnering aanbetaling - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Betalingsherinnering aanbetaling - Partycentrum Lux", html, MailLogType.BETALING_HERINNERING_AANBETALING, booking.getId(), null);
     }
 
     public void sendRestantReminder(Booking booking) {
@@ -188,7 +198,7 @@ public class MailService {
                         settings.getIban()
                 )
         );
-        sendHtml(customer.getEmail(), "Betalingsherinnering restant - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Betalingsherinnering restant - Partycentrum Lux", html, MailLogType.BETALING_HERINNERING_RESTANT, booking.getId(), null);
     }
 
     public void sendPaymentConfirmation(Booking booking, PaymentPart part) {
@@ -209,7 +219,7 @@ public class MailService {
                         paidDate == null ? LocalDate.now().format(DATE) : paidDate.format(DATE)
                 )
         );
-        sendHtml(customer.getEmail(), "Betaling ontvangen - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Betaling ontvangen - Partycentrum Lux", html, MailLogType.BEVESTIGINGSMAIL, booking.getId(), null);
     }
 
     public void sendInvoice(Invoice invoice) {
@@ -227,7 +237,7 @@ public class MailService {
                         invoice.getDueDate().format(DATE)
                 )
         );
-        sendHtmlWithAttachment(customer.getEmail(), "Factuur " + invoice.getInvoiceNumber() + " - Partycentrum Lux", html, invoice);
+        sendHtmlWithAttachment(customer.getEmail(), "Factuur " + invoice.getInvoiceNumber() + " - Partycentrum Lux", html, invoice, MailLogType.BEVESTIGINGSMAIL, invoice.getBooking().getId(), null);
     }
 
     public void sendPaymentConfirmation(Invoice invoice) {
@@ -245,7 +255,7 @@ public class MailService {
                         invoice.getPaidDate().format(DATE)
                 )
         );
-        sendHtml(customer.getEmail(), "Betaling ontvangen - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Betaling ontvangen - Partycentrum Lux", html, MailLogType.BEVESTIGINGSMAIL, invoice.getBooking().getId(), null);
     }
 
     public void sendBookingFullyPaid(Booking booking) {
@@ -258,7 +268,7 @@ public class MailService {
                         <p>We kijken ernaar uit u te ontvangen bij Partycentrum Lux.</p>
                         """.formatted(customer.getName(), booking.getEventDate().format(DATE))
         );
-        sendHtml(customer.getEmail(), "Boeking volledig betaald - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Boeking volledig betaald - Partycentrum Lux", html, MailLogType.BEVESTIGINGSMAIL, booking.getId(), null);
     }
 
     public void sendEventReminder(Booking booking) {
@@ -280,7 +290,7 @@ public class MailService {
                         textBlock(settings.getGeneralTerms())
                 )
         );
-        sendHtml(customer.getEmail(), "Uw evenement is over 7 dagen - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Uw evenement is over 7 dagen - Partycentrum Lux", html, MailLogType.EVENEMENT_HERINNERING, booking.getId(), null);
     }
 
     public void sendThankYou(Booking booking) {
@@ -299,7 +309,7 @@ public class MailService {
                         <p><a href="%s" style="color:#0f172a;font-weight:700;">Laat een Google review achter</a></p>
                         """.formatted(customer.getNaam(), settings.getGoogleReviewUrl())
         );
-        sendHtml(customer.getEmail(), "Bedankt voor uw evenement - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Bedankt voor uw evenement - Partycentrum Lux", html, MailLogType.REVIEW_VERZOEK, booking.getId(), null);
     }
 
     public void sendCancellation(Booking booking) {
@@ -319,7 +329,7 @@ public class MailService {
                                 : booking.getAnnuleringsReden())
                 )
         );
-        sendHtml(customer.getEmail(), "Boeking geannuleerd - Partycentrum Lux", html);
+        sendHtml(customer.getEmail(), "Boeking geannuleerd - Partycentrum Lux", html, MailLogType.ANNULERING, booking.getId(), null);
     }
 
     public void sendWeeklyOwnerSummary(List<Booking> bookings, BigDecimal expectedRevenue, BigDecimal outstandingPayments) {
@@ -353,12 +363,37 @@ public class MailService {
                         money(expectedRevenue),
                         money(outstandingPayments))
         );
-        sendHtml(mailProperties.ownerEmail(), "Weekoverzicht Partycentrum Lux", html);
+        sendHtml(mailProperties.ownerEmail(), "Weekoverzicht Partycentrum Lux", html, MailLogType.BEVESTIGINGSMAIL, null, null);
     }
 
-    private void sendHtml(String to, String subject, String html) {
+    public void sendOfferteSignedConfirmationByBookingId(Long bookingId) {
+        sendOfferteSignedConfirmation(getBooking(bookingId));
+    }
+
+    public void sendAanbetalingReminderByBookingId(Long bookingId) {
+        sendAanbetalingReminder(getBooking(bookingId));
+    }
+
+    public void sendRestantReminderByBookingId(Long bookingId) {
+        sendRestantReminder(getBooking(bookingId));
+    }
+
+    public void sendEventReminderByBookingId(Long bookingId) {
+        sendEventReminder(getBooking(bookingId));
+    }
+
+    public void sendReviewRequestByBookingId(Long bookingId) {
+        sendReviewRequest(getBooking(bookingId));
+    }
+
+    public void sendCancellationByBookingId(Long bookingId) {
+        sendCancellation(getBooking(bookingId));
+    }
+
+    private void sendHtml(String to, String subject, String html, MailLogType type, Long bookingId, Long bezichtigingId) {
         if (!mailProperties.enabled()) {
             log.info("Mail disabled. Would send '{}' to {}", subject, to);
+            mailLogService.logSent(bookingId, bezichtigingId, type, to, subject);
             return;
         }
 
@@ -371,14 +406,25 @@ public class MailService {
             helper.setText(html, true);
             mailSender.send(message);
             log.info("Mail sent '{}' to {}", subject, to);
+            mailLogService.logSent(bookingId, bezichtigingId, type, to, subject);
         } catch (MessagingException | MailException exception) {
+            mailLogService.logFailed(bookingId, bezichtigingId, type, to, subject, exception);
             throw new IllegalStateException("E-mail kon niet worden verzonden.", exception);
         }
     }
 
-    private void sendHtmlWithAttachment(String to, String subject, String html, Invoice invoice) {
+    private void sendHtmlWithAttachment(
+            String to,
+            String subject,
+            String html,
+            Invoice invoice,
+            MailLogType type,
+            Long bookingId,
+            Long bezichtigingId
+    ) {
         if (!mailProperties.enabled()) {
             log.info("Mail disabled. Would send '{}' with invoice attachment to {}", subject, to);
+            mailLogService.logSent(bookingId, bezichtigingId, type, to, subject);
             return;
         }
 
@@ -394,9 +440,24 @@ public class MailService {
             }
             mailSender.send(message);
             log.info("Mail sent '{}' with invoice attachment to {}", subject, to);
+            mailLogService.logSent(bookingId, bezichtigingId, type, to, subject);
         } catch (MessagingException | MailException exception) {
+            mailLogService.logFailed(bookingId, bezichtigingId, type, to, subject, exception);
             throw new IllegalStateException("E-mail kon niet worden verzonden.", exception);
         }
+    }
+
+    private Booking getBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Boeking niet gevonden."));
+    }
+
+    private MailLogType reminderType(Invoice invoice) {
+        return switch (invoice.getInvoiceType()) {
+            case AANBETALING -> MailLogType.BETALING_HERINNERING_AANBETALING;
+            case RESTANT -> MailLogType.BETALING_HERINNERING_RESTANT;
+            default -> MailLogType.BEVESTIGINGSMAIL;
+        };
     }
 
     private String layout(String title, String body) {

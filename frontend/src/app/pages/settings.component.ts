@@ -6,7 +6,7 @@ import { finalize } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../core/api.service';
 import { ThemeService } from '../core/theme.service';
-import { CompanySettings } from '../core/models';
+import { CompanySettings, MailLog, MailLogStatus, MailLogType, SelectOption } from '../core/models';
 import { PRIME_IMPORTS } from '../shared/prime-imports';
 
 type PreviewVariables = Record<string, string>;
@@ -22,6 +22,8 @@ type PreviewVariables = Record<string, string>;
         <p class="muted">Bedrijfsgegevens, offertestijl, DocuSeal, mail en weergave.</p>
       </div>
 
+      <p-tabView>
+        <p-tabPanel header="Instellingen">
       <div class="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_620px]">
         <form class="surface-panel grid gap-6 rounded-md p-5" [formGroup]="form" (ngSubmit)="save()">
           <section class="grid gap-4">
@@ -239,6 +241,54 @@ type PreviewVariables = Record<string, string>;
           </div>
         </aside>
       </div>
+        </p-tabPanel>
+        <p-tabPanel header="Mail overzicht">
+          <section class="surface-panel rounded-md p-5">
+            <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+              <div>
+                <h2 class="text-lg font-bold text-slate-950 dark:text-white">Mail overzicht</h2>
+                <p class="muted">Alle verzonden en mislukte mails over alle boekingen.</p>
+              </div>
+              <div class="grid gap-3 sm:grid-cols-3">
+                <p-dropdown [options]="mailTypeOptions" [(ngModel)]="mailFilters.type" optionLabel="label" optionValue="value" placeholder="Type" styleClass="w-full" (onChange)="loadMailLogs()"></p-dropdown>
+                <p-dropdown [options]="mailStatusOptions" [(ngModel)]="mailFilters.status" optionLabel="label" optionValue="value" placeholder="Status" styleClass="w-full" (onChange)="loadMailLogs()"></p-dropdown>
+                <span class="p-input-icon-left">
+                  <i class="pi pi-search"></i>
+                  <input pInputText class="w-full" [(ngModel)]="mailFilters.search" placeholder="Zoek e-mail" (input)="loadMailLogs()">
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-4 overflow-x-auto">
+              <p-table [value]="mailLogs" [loading]="mailLogsLoading" responsiveLayout="scroll" [paginator]="true" [rows]="10">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Type</th>
+                    <th>Klant naam</th>
+                    <th>Ontvanger</th>
+                    <th>Verzonden op</th>
+                    <th>Status</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-log>
+                  <tr>
+                    <td>{{ label(log.type) }}</td>
+                    <td>{{ log.klantNaam || '-' }}</td>
+                    <td>{{ log.ontvangerEmail }}</td>
+                    <td>{{ log.verzondenOp | date:'dd MMM yyyy HH:mm' }}</td>
+                    <td><p-tag [value]="log.status" [severity]="mailSeverity(log.status)"></p-tag></td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td colspan="5" class="py-6 text-center text-sm text-slate-500">Geen mails gevonden.</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          </section>
+        </p-tabPanel>
+      </p-tabView>
     </section>
   `
 })
@@ -250,7 +300,30 @@ export class SettingsComponent implements OnInit {
   uploadingLogo = false;
   testingDocuseal = false;
   previewHtml: SafeHtml | null = null;
+  mailLogs: MailLog[] = [];
+  mailLogsLoading = false;
+  mailFilters: { type: MailLogType | null; status: MailLogStatus | null; search: string } = {
+    type: null,
+    status: null,
+    search: ''
+  };
   private invoiceTemplate = '';
+
+  readonly mailTypeOptions: SelectOption<MailLogType | null>[] = [
+    { label: 'Alle types', value: null },
+    { label: 'Offerte verzonden', value: 'OFFERTE_VERZONDEN' },
+    { label: 'Bevestigingsmail', value: 'BEVESTIGINGSMAIL' },
+    { label: 'Aanbetaling herinnering', value: 'BETALING_HERINNERING_AANBETALING' },
+    { label: 'Restant herinnering', value: 'BETALING_HERINNERING_RESTANT' },
+    { label: 'Evenement herinnering', value: 'EVENEMENT_HERINNERING' },
+    { label: 'Review verzoek', value: 'REVIEW_VERZOEK' },
+    { label: 'Annulering', value: 'ANNULERING' }
+  ];
+  readonly mailStatusOptions: SelectOption<MailLogStatus | null>[] = [
+    { label: 'Alle statussen', value: null },
+    { label: 'Verzonden', value: 'VERZONDEN' },
+    { label: 'Mislukt', value: 'MISLUKT' }
+  ];
 
   readonly form = this.fb.nonNullable.group({
     companyName: ['', Validators.required],
@@ -291,9 +364,26 @@ export class SettingsComponent implements OnInit {
   ngOnInit(): void {
     this.invoiceTemplate = this.defaultOfferteTemplate();
     this.api.settings().subscribe((settings) => this.patch(settings));
+    this.loadMailLogs();
     this.form.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.refreshPreview());
+  }
+
+  loadMailLogs(): void {
+    this.mailLogsLoading = true;
+    this.api.mailLogs(this.mailFilters).subscribe({
+      next: (logs) => this.mailLogs = logs,
+      complete: () => this.mailLogsLoading = false
+    });
+  }
+
+  mailSeverity(status: MailLogStatus): 'success' | 'danger' {
+    return status === 'VERZONDEN' ? 'success' : 'danger';
+  }
+
+  label(value: string): string {
+    return value.replaceAll('_', ' ').toLowerCase();
   }
 
   get brandColorValue(): string {

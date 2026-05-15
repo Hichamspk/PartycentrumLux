@@ -2,7 +2,9 @@ package nl.partycentrum.lux.service;
 
 import nl.partycentrum.lux.domain.Booking;
 import nl.partycentrum.lux.domain.BookingStatus;
+import nl.partycentrum.lux.domain.MailLogType;
 import nl.partycentrum.lux.domain.SubPrijs;
+import nl.partycentrum.lux.dto.offerte.OfferteDraftRequest;
 import nl.partycentrum.lux.dto.offerte.OfferteResponse;
 import nl.partycentrum.lux.exception.ApiException;
 import nl.partycentrum.lux.repository.BookingRepository;
@@ -27,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class OfferteService {
@@ -39,20 +42,29 @@ public class OfferteService {
     private final BookingRepository bookingRepository;
     private final DocusealService docusealService;
     private final MailService mailService;
+    private final MailLogService mailLogService;
 
     public OfferteService(
             BookingRepository bookingRepository,
             DocusealService docusealService,
-            MailService mailService
+            MailService mailService,
+            MailLogService mailLogService
     ) {
         this.bookingRepository = bookingRepository;
         this.docusealService = docusealService;
         this.mailService = mailService;
+        this.mailLogService = mailLogService;
     }
 
     @Transactional
     public OfferteResponse generate(Long bookingId) {
+        return saveConcept(bookingId, null);
+    }
+
+    @Transactional
+    public OfferteResponse saveConcept(Long bookingId, OfferteDraftRequest request) {
         var booking = getBooking(bookingId);
+        applyDraft(booking, request);
         var pdf = generatePdfBytes(booking);
         var path = savePdf(booking, pdf);
         booking.setOffertePdfPath(path.toString());
@@ -64,10 +76,17 @@ public class OfferteService {
 
     @Transactional
     public OfferteResponse send(Long bookingId) {
+        return send(bookingId, null);
+    }
+
+    @Transactional
+    public OfferteResponse send(Long bookingId, OfferteDraftRequest request) {
         var booking = getBooking(bookingId);
+        applyDraft(booking, request);
         var pdf = generatePdfBytes(booking);
         var path = savePdf(booking, pdf);
-        var submission = docusealService.sendOfferte(booking, pdf, documentRef(booking));
+        var subject = "Uw offerte - Partycentrum Lux";
+        var submission = sendToDocuseal(booking, pdf, subject);
         booking.setOffertePdfPath(path.toString());
         booking.setDocusealSubmissionId(submission.submissionId());
         booking.setStatus(BookingStatus.OFFERTE_VERZONDEN);
@@ -96,6 +115,11 @@ public class OfferteService {
     }
 
     @Transactional(readOnly = true)
+    public byte[] previewPdf(Long bookingId, OfferteDraftRequest request) {
+        return generatePdfBytes(getBooking(bookingId), request);
+    }
+
+    @Transactional(readOnly = true)
     public Resource download(Long bookingId) {
         var booking = getBooking(bookingId);
         if (booking.getOffertePdfPath() == null || booking.getOffertePdfPath().isBlank()) {
@@ -113,7 +137,11 @@ public class OfferteService {
     }
 
     public byte[] generatePdfBytes(Booking booking) {
-        var html = renderHtml(booking);
+        return generatePdfBytes(booking, null);
+    }
+
+    public byte[] generatePdfBytes(Booking booking, OfferteDraftRequest request) {
+        var html = renderHtml(booking, request);
         try (var output = new ByteArrayOutputStream()) {
             var renderer = new ITextRenderer();
             renderer.getSharedContext().setPrint(true);
@@ -128,8 +156,12 @@ public class OfferteService {
     }
 
     public String renderHtml(Booking booking) {
+        return renderHtml(booking, null);
+    }
+
+    public String renderHtml(Booking booking, OfferteDraftRequest request) {
         var html = loadTemplate();
-        for (var entry : variables(booking).entrySet()) {
+        for (var entry : variables(booking, request).entrySet()) {
             html = html.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return html;
@@ -171,14 +203,15 @@ public class OfferteService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Boeking niet gevonden."));
     }
 
-    private Map<String, String> variables(Booking booking) {
+    private Map<String, String> variables(Booking booking, OfferteDraftRequest request) {
         var offerteDatum = booking.getOfferteDatum() == null ? LocalDate.now() : booking.getOfferteDatum();
-        var aanbetalingDatum = booking.getAanbetalingDeadline() == null
-                ? offerteDatum.plusDays(7)
-                : booking.getAanbetalingDeadline();
-        var restantDatum = booking.getRestantDeadline() == null
-                ? booking.getEvenementDatum().minusDays(14)
-                : booking.getRestantDeadline();
+        var aanbetalingDatum = aanbetalingDeadline(booking, offerteDatum);
+        var restantDatum = restantDeadline(booking);
+        var eigenschappen = request == null || request.eigenschappen() == null
+                ? booking.getEigenschappen()
+                : cleanProperties(request.eigenschappen());
+        var extraVoorwaarden = request == null ? booking.getConditions() : request.extraVoorwaarden();
+        var klantNotities = request == null ? booking.getOfferteCustomerMessage() : request.klantNotities();
 
         var variables = new LinkedHashMap<String, String>();
         variables.put("KLANT_NAAM", escape(booking.getCustomer().getNaam()));
@@ -195,11 +228,23 @@ public class OfferteService {
         variables.put("AANBETALING_DATUM", formatDate(aanbetalingDatum));
         variables.put("RESTANT_DATUM", formatDate(restantDatum));
         variables.put("AANTAL_GASTEN", String.valueOf(booking.getAantalGasten()));
-        variables.put("EXTRA_EIGENSCHAPPEN", eigenschappen(booking));
+        variables.put("EXTRA_EIGENSCHAPPEN", eigenschappen(eigenschappen));
+        variables.put("EXTRA_VOORWAARDEN", optionalParagraph(extraVoorwaarden));
+        variables.put("KLANT_NOTITIES", optionalCoverNote(klantNotities));
         variables.put("BETAAL_OMSCHRIJVING", booking.getEvenementDatum().format(PAYMENT_REF_DATE) + " - " + documentRef(booking));
         variables.put("ONDERTEKENING_DATUM", booking.getOndertekeningDatum() == null ? "" : formatDate(booking.getOndertekeningDatum()));
         variables.put("DOCUMENT_REF", documentRef(booking));
         return variables;
+    }
+
+    private LocalDate restantDeadline(Booking booking) {
+        return booking.getEvenementDatum() == null ? null : booking.getEvenementDatum().minusDays(14);
+    }
+
+    private LocalDate aanbetalingDeadline(Booking booking, LocalDate fallbackDate) {
+        return booking.getOndertekeningDatum() == null
+                ? fallbackDate.plusDays(7)
+                : booking.getOndertekeningDatum().plusDays(7);
     }
 
     private String subPrijsRows(Booking booking) {
@@ -220,10 +265,60 @@ public class OfferteService {
                 """.formatted(escape(subPrijs.getNaam()), bedrag, bedrag);
     }
 
-    private String eigenschappen(Booking booking) {
-        return booking.getEigenschappen().stream()
+    private String eigenschappen(List<String> eigenschappen) {
+        return eigenschappen.stream()
                 .map(item -> "<li>" + escape(item) + "</li>")
                 .reduce("", String::concat);
+    }
+
+    private String optionalParagraph(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return "<li><strong>Aanvullende voorwaarden:</strong> " + escape(value).replace("\n", "<br />") + "</li>";
+    }
+
+    private String optionalCoverNote(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return "<div class=\"cover-note\">" + escape(value).replace("\n", "<br />") + "</div>";
+    }
+
+    private void applyDraft(Booking booking, OfferteDraftRequest request) {
+        if (request == null) {
+            return;
+        }
+        booking.setEigenschappen(cleanProperties(request.eigenschappen()));
+        booking.setConditions(blankToNull(request.extraVoorwaarden()));
+        booking.setOfferteCustomerMessage(blankToNull(request.klantNotities()));
+    }
+
+    private List<String> cleanProperties(List<String> properties) {
+        if (properties == null) {
+            return List.of();
+        }
+        return properties.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(property -> !property.isBlank())
+                .distinct()
+                .toList();
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private nl.partycentrum.lux.dto.contract.DocusealSubmissionResult sendToDocuseal(Booking booking, byte[] pdf, String subject) {
+        try {
+            var submission = docusealService.sendOfferte(booking, pdf, documentRef(booking));
+            mailLogService.logSent(booking.getId(), null, MailLogType.OFFERTE_VERZONDEN, booking.getCustomer().getEmail(), subject);
+            return submission;
+        } catch (RuntimeException exception) {
+            mailLogService.logFailed(booking.getId(), null, MailLogType.OFFERTE_VERZONDEN, booking.getCustomer().getEmail(), subject, exception);
+            throw exception;
+        }
     }
 
     private String loadTemplate() {

@@ -14,6 +14,17 @@ export type InvoiceType = 'VOLLEDIG' | 'AANBETALING' | 'RESTANT';
 export type PaymentMethod = 'BANK' | 'CASH' | 'PIN';
 export type PaymentPart = 'AANBETALING' | 'RESTANT';
 export type PaymentState = 'OPENSTAAND' | 'BETAALD' | 'VERLOPEN';
+export type MailLogType =
+  | 'OFFERTE_VERZONDEN'
+  | 'BEZICHTIGING_BEVESTIGING'
+  | 'BEZICHTIGING_HERINNERING'
+  | 'BEVESTIGINGSMAIL'
+  | 'BETALING_HERINNERING_AANBETALING'
+  | 'BETALING_HERINNERING_RESTANT'
+  | 'EVENEMENT_HERINNERING'
+  | 'REVIEW_VERZOEK'
+  | 'ANNULERING';
+export type MailLogStatus = 'VERZONDEN' | 'MISLUKT';
 
 export interface AuthResponse {
   accessToken: string;
@@ -81,6 +92,7 @@ export interface Booking {
   eigenschappen: string[];
   properties: string[];
   conditions?: string;
+  offerteCustomerMessage?: string;
   contractStatus: ContractStatus;
   docusealSubmissionId?: string;
   offerteDatum?: string;
@@ -108,6 +120,25 @@ export interface Offerte {
   docusealSubmissionId?: string;
   pdfPath?: string;
   downloadUrl?: string;
+}
+
+export interface OfferteDraft {
+  eigenschappen: string[];
+  extraVoorwaarden?: string;
+  klantNotities?: string;
+}
+
+export interface MailLog {
+  id: number;
+  bookingId?: number;
+  bezichtigingId?: number;
+  type: MailLogType;
+  klantNaam?: string;
+  ontvangerEmail: string;
+  onderwerp: string;
+  status: MailLogStatus;
+  foutmelding?: string;
+  verzondenOp: string;
 }
 
 export interface Contract {

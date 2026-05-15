@@ -14,6 +14,7 @@ import { InputSwitchModule } from 'primeng/inputswitch';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextarea } from 'primeng/inputtextarea';
 import { PasswordModule } from 'primeng/password';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TabViewModule } from 'primeng/tabview';
 import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
@@ -37,6 +38,7 @@ export const PRIME_IMPORTS = [
   InputTextModule,
   InputTextarea,
   PasswordModule,
+  ProgressSpinnerModule,
   TabViewModule,
   TagModule,
   TableModule,

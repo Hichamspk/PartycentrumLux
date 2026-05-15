@@ -148,6 +148,7 @@ public class BookingService {
                 List.copyOf(booking.getEigenschappen()),
                 List.copyOf(booking.getProperties()),
                 booking.getConditions(),
+                booking.getOfferteCustomerMessage(),
                 booking.getContractStatus(),
                 booking.getDocusealSubmissionId(),
                 booking.getOfferteDatum(),

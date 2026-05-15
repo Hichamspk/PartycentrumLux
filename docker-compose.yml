@@ -42,6 +42,18 @@ services:
     networks:
       - lux-network
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: lux-frontend
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
+    restart: unless-stopped
+    networks:
+      - lux-network
+
   docuseal:
     image: docuseal/docuseal:latest
     container_name: lux-docuseal

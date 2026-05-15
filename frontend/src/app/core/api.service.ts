@@ -14,7 +14,11 @@ import {
   EventType,
   Invoice,
   InvoiceStatus,
+  MailLog,
+  MailLogStatus,
+  MailLogType,
   Offerte,
+  OfferteDraft,
   SubPrijs,
   Payment,
   PaymentPart,
@@ -163,12 +167,24 @@ export class ApiService {
     return this.http.get(`${this.apiUrl}/bookings/${bookingId}/offerte/preview`, { responseType: 'text' });
   }
 
+  offertePreviewHtml(bookingId: number, draft: OfferteDraft): Observable<string> {
+    return this.http.post(`${this.apiUrl}/bookings/${bookingId}/offerte/preview`, draft, { responseType: 'text' });
+  }
+
+  offertePreviewPdf(bookingId: number, draft: OfferteDraft): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/bookings/${bookingId}/offerte/preview/pdf`, draft, { responseType: 'blob' });
+  }
+
   generateOfferte(bookingId: number): Observable<Offerte> {
     return this.http.post<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte/generate`, {});
   }
 
-  sendOfferte(bookingId: number): Observable<Offerte> {
-    return this.http.post<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte/send`, {});
+  saveOfferteConcept(bookingId: number, draft: OfferteDraft): Observable<Offerte> {
+    return this.http.post<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte/concept`, draft);
+  }
+
+  sendOfferte(bookingId: number, draft?: OfferteDraft): Observable<Offerte> {
+    return this.http.post<Offerte>(`${this.apiUrl}/bookings/${bookingId}/offerte/send`, draft ?? {});
   }
 
   downloadOfferte(bookingId: number): Observable<Blob> {
@@ -289,5 +305,27 @@ export class ApiService {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post<CompanySettings>(`${this.apiUrl}/settings/logo`, formData);
+  }
+
+  mailLogs(filters?: {
+    type?: MailLogType | null;
+    status?: MailLogStatus | null;
+    search?: string | null;
+  }): Observable<MailLog[]> {
+    let params = new HttpParams();
+    Object.entries(filters ?? {}).forEach(([key, value]) => {
+      if (value) {
+        params = params.set(key, value);
+      }
+    });
+    return this.http.get<MailLog[]>(`${this.apiUrl}/mail-logs`, { params });
+  }
+
+  bookingMailLogs(bookingId: number): Observable<MailLog[]> {
+    return this.http.get<MailLog[]>(`${this.apiUrl}/mail-logs/booking/${bookingId}`);
+  }
+
+  resendMailLog(id: number): Observable<MailLog> {
+    return this.http.post<MailLog>(`${this.apiUrl}/mail-logs/${id}/resend`, {});
   }
 }

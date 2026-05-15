@@ -46,6 +46,7 @@ public record BookingResponse(
         List<String> eigenschappen,
         List<String> properties,
         String conditions,
+        String offerteCustomerMessage,
         ContractStatus contractStatus,
         String docusealSubmissionId,
         LocalDate offerteDatum,

@@ -5,6 +5,8 @@ import { ShellComponent } from './layout/shell.component';
 import { LoginComponent } from './pages/login.component';
 import { DashboardComponent } from './pages/dashboard.component';
 import { CalendarComponent } from './pages/calendar.component';
+import { BezichtigingenComponent } from './pages/bezichtigingen.component';
+import { BezichtigingDetailComponent } from './pages/bezichtiging-detail.component';
 import { BookingsComponent } from './pages/bookings.component';
 import { BookingDetailComponent } from './pages/booking-detail.component';
 import { OfferteEditorComponent } from './pages/offerte-editor.component';
@@ -23,6 +25,8 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent },
       { path: 'kalender', component: CalendarComponent },
+      { path: 'bezichtigingen', component: BezichtigingenComponent },
+      { path: 'bezichtigingen/:id', component: BezichtigingDetailComponent },
       { path: 'boekingen', component: BookingsComponent },
       { path: 'boekingen/:id/offerte', component: OfferteEditorComponent, canActivate: [roleGuard], data: { roles: ['OWNER'] } },
       { path: 'boekingen/:id', component: BookingDetailComponent },

@@ -92,6 +92,7 @@ export class ShellComponent {
   readonly navItems: NavItem[] = [
     { label: 'Dashboard', route: '/dashboard', icon: 'layout-dashboard' },
     { label: 'Kalender', route: '/kalender', icon: 'calendar-days' },
+    { label: 'Bezichtigingen', route: '/bezichtigingen', icon: 'calendar-check' },
     { label: 'Boekingen', route: '/boekingen', icon: 'book-open' },
     { label: 'Klanten', route: '/klanten', icon: 'users' },
     { label: 'Betalingen', route: '/betalingen', icon: 'credit-card' },

@@ -10,6 +10,7 @@ import Aura from '@primeng/themes/aura';
 import {
   BadgeEuro,
   BookOpen,
+  CalendarCheck,
   CalendarDays,
   CheckCircle2,
   CreditCard,
@@ -57,6 +58,7 @@ export const appConfig: ApplicationConfig = {
     importProvidersFrom(LucideAngularModule.pick({
       BadgeEuro,
       BookOpen,
+      CalendarCheck,
       CalendarDays,
       CheckCircle2,
       CreditCard,

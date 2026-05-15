@@ -5,6 +5,8 @@ import { environment } from '../../environments/environment';
 import {
   Booking,
   BookingStatus,
+  Bezichtiging,
+  BezichtigingStatus,
   CompanySettings,
   Contract,
   ContractStatus,
@@ -98,6 +100,43 @@ export class ApiService {
 
   updateBookingStatus(id: number, status: BookingStatus): Observable<Booking> {
     return this.http.patch<Booking>(`${this.apiUrl}/bookings/${id}/status`, { status });
+  }
+
+  bezichtigingen(status?: BezichtigingStatus | null): Observable<Bezichtiging[]> {
+    const params = status ? new HttpParams().set('status', status) : undefined;
+    return this.http.get<Bezichtiging[]>(`${this.apiUrl}/bezichtigingen`, { params });
+  }
+
+  upcomingBezichtigingen(): Observable<Bezichtiging[]> {
+    return this.http.get<Bezichtiging[]>(`${this.apiUrl}/bezichtigingen/upcoming`);
+  }
+
+  calendarBezichtigingen(start: string, end: string): Observable<Bezichtiging[]> {
+    return this.http.get<Bezichtiging[]>(`${this.apiUrl}/bezichtigingen/calendar`, {
+      params: new HttpParams().set('start', start).set('end', end)
+    });
+  }
+
+  bezichtiging(id: number): Observable<Bezichtiging> {
+    return this.http.get<Bezichtiging>(`${this.apiUrl}/bezichtigingen/${id}`);
+  }
+
+  saveBezichtiging(bezichtiging: Record<string, unknown>): Observable<Bezichtiging> {
+    return bezichtiging['id']
+      ? this.http.put<Bezichtiging>(`${this.apiUrl}/bezichtigingen/${bezichtiging['id']}`, bezichtiging)
+      : this.http.post<Bezichtiging>(`${this.apiUrl}/bezichtigingen`, bezichtiging);
+  }
+
+  updateBezichtigingStatus(id: number, status: BezichtigingStatus): Observable<Bezichtiging> {
+    return this.http.patch<Bezichtiging>(`${this.apiUrl}/bezichtigingen/${id}/status`, { status });
+  }
+
+  linkBezichtigingToBoeking(bezichtigingId: number, boekingId: number): Observable<Bezichtiging> {
+    return this.http.post<Bezichtiging>(`${this.apiUrl}/bezichtigingen/${bezichtigingId}/link-boeking/${boekingId}`, {});
+  }
+
+  downloadBezichtigingIcs(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/bezichtigingen/${id}/ics`, { responseType: 'blob' });
   }
 
   cancelBooking(id: number, reason: string): Observable<Booking> {
@@ -323,6 +362,10 @@ export class ApiService {
 
   bookingMailLogs(bookingId: number): Observable<MailLog[]> {
     return this.http.get<MailLog[]>(`${this.apiUrl}/mail-logs/booking/${bookingId}`);
+  }
+
+  bezichtigingMailLogs(bezichtigingId: number): Observable<MailLog[]> {
+    return this.http.get<MailLog[]>(`${this.apiUrl}/mail-logs/bezichtiging/${bezichtigingId}`);
   }
 
   resendMailLog(id: number): Observable<MailLog> {

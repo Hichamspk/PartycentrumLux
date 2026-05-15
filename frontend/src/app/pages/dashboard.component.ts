@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
-import { Booking, DashboardStats, Invoice } from '../core/models';
+import { Bezichtiging, Booking, DashboardStats, Invoice } from '../core/models';
 import { PRIME_IMPORTS } from '../shared/prime-imports';
 
 @Component({
@@ -92,20 +92,20 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
 
         @if (auth.isOwner) {
           <section class="surface-panel rounded-md p-5">
-            <h2 class="text-lg font-bold">Recente offertes</h2>
+            <h2 class="text-lg font-bold">Aankomende bezichtigingen</h2>
             <div class="mt-4 space-y-3">
-              @for (invoice of recentInvoices; track invoice.id) {
+              @for (bezichtiging of upcomingBezichtigingen; track bezichtiging.id) {
                 <article class="rounded-md border border-slate-200 p-4 dark:border-slate-800">
                   <div class="flex items-center justify-between gap-3">
                     <div>
-                      <p class="font-semibold">{{ invoice.invoiceNumber }}</p>
-                      <p class="muted">{{ invoice.customerName }} - {{ invoice.totalAmount | currency:'EUR' }}</p>
+                      <p class="font-semibold">{{ bezichtiging.klantNaam }}</p>
+                      <p class="muted">{{ bezichtiging.datum | date:'dd MMM yyyy' }} - {{ bezichtiging.startTijd }} tot {{ bezichtiging.eindTijd }}</p>
                     </div>
-                    <p-tag [value]="invoice.status" [severity]="invoice.status === 'BETAALD' ? 'success' : invoice.status === 'VERLOPEN' ? 'danger' : 'warn'"></p-tag>
+                    <p-tag [value]="bezichtiging.status" severity="info"></p-tag>
                   </div>
                 </article>
               } @empty {
-                <p class="muted">Nog geen offertes verzonden.</p>
+                <p class="muted">Geen aankomende bezichtigingen gevonden.</p>
               }
             </div>
           </section>
@@ -117,6 +117,7 @@ import { PRIME_IMPORTS } from '../shared/prime-imports';
 export class DashboardComponent implements OnInit {
   stats: DashboardStats | null = null;
   upcoming: Booking[] = [];
+  upcomingBezichtigingen: Bezichtiging[] = [];
   recentInvoices: Invoice[] = [];
   revenueData: object | null = null;
   bookingData: object | null = null;
@@ -133,6 +134,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.auth.isOwner) {
+      this.api.upcomingBezichtigingen().subscribe((items) => this.upcomingBezichtigingen = items.slice(0, 5));
       this.api.dashboardStats().subscribe((stats) => {
         this.stats = stats;
         this.upcoming = stats.upcomingBookings;
@@ -148,6 +150,7 @@ export class DashboardComponent implements OnInit {
       });
     } else {
       this.api.upcomingBookings().subscribe((bookings) => this.upcoming = bookings);
+      this.api.upcomingBezichtigingen().subscribe((items) => this.upcomingBezichtigingen = items.slice(0, 5));
     }
   }
 

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { ApiService } from '../core/api.service';
-import { Booking, EventType } from '../core/models';
+import { Bezichtiging, Booking } from '../core/models';
 import { PRIME_IMPORTS } from '../shared/prime-imports';
 
 interface CalendarDay {
@@ -18,9 +19,15 @@ interface CalendarDay {
       <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h1 class="page-title">Kalender</h1>
-          <p class="muted">Bekijk bezette dagen en open direct de boekingsdetails.</p>
+          <p class="muted">Boekingen en bezichtigingen in een overzicht.</p>
         </div>
         <p-calendar [(ngModel)]="monthPicker" view="month" dateFormat="MM yy" [readonlyInput]="true" (onSelect)="changeMonth()"></p-calendar>
+      </div>
+
+      <div class="flex flex-wrap gap-3 text-sm">
+        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-blue-600"></span>Bezichtigingen</span>
+        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-amber-500"></span>Boekingen gepland</span>
+        <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-emerald-600"></span>Boekingen bevestigd/betaald</span>
       </div>
 
       <div class="surface-panel overflow-hidden rounded-md">
@@ -40,8 +47,13 @@ interface CalendarDay {
               <span class="text-sm font-semibold" [class.text-slate-400]="!day.currentMonth">{{ day.date.getDate() }}</span>
               <div class="mt-2 space-y-1">
                 @for (booking of eventsFor(day.iso); track booking.id) {
-                  <span class="block truncate rounded px-2 py-1 text-xs font-semibold text-white" [class]="eventClass(booking.eventType)">
+                  <span class="block truncate rounded px-2 py-1 text-xs font-semibold text-white" [class]="eventClass(booking)">
                     {{ booking.customerName }}
+                  </span>
+                }
+                @for (bezichtiging of bezichtigingenFor(day.iso); track bezichtiging.id) {
+                  <span class="block truncate rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white">
+                    {{ bezichtiging.klantNaam }}
                   </span>
                 }
               </div>
@@ -50,8 +62,19 @@ interface CalendarDay {
         </div>
       </div>
 
-      <p-dialog header="Boekingen op datum" [(visible)]="detailsOpen" [modal]="true" [style]="{ width: 'min(560px, 92vw)' }">
+      <p-dialog header="Planning op datum" [(visible)]="detailsOpen" [modal]="true" [style]="{ width: 'min(640px, 92vw)' }">
         <div class="space-y-3">
+          @for (bezichtiging of selectedBezichtigingen; track bezichtiging.id) {
+            <article class="rounded-md border border-blue-200 bg-blue-50 p-4 text-blue-950">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="font-bold">{{ bezichtiging.klantNaam }}</p>
+                  <p class="text-sm text-blue-700">Bezichtiging - {{ bezichtiging.startTijd }} tot {{ bezichtiging.eindTijd }}</p>
+                </div>
+                <button pButton type="button" label="Open" size="small" class="p-button-secondary" (click)="openBezichtiging(bezichtiging)"></button>
+              </div>
+            </article>
+          }
           @for (booking of selectedBookings; track booking.id) {
             <article class="rounded-md border border-slate-200 p-4 dark:border-slate-800">
               <div class="flex items-center justify-between">
@@ -65,8 +88,9 @@ interface CalendarDay {
                 <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">{{ booking.notes }}</p>
               }
             </article>
-          } @empty {
-            <p class="muted">Geen boekingen op deze datum.</p>
+          }
+          @if (!selectedBookings.length && !selectedBezichtigingen.length) {
+            <p class="muted">Geen planning op deze datum.</p>
           }
         </div>
       </p-dialog>
@@ -78,10 +102,12 @@ export class CalendarComponent implements OnInit {
   monthPicker = new Date();
   days: CalendarDay[] = [];
   bookings: Booking[] = [];
+  bezichtigingen: Bezichtiging[] = [];
   selectedBookings: Booking[] = [];
+  selectedBezichtigingen: Bezichtiging[] = [];
   detailsOpen = false;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService, private readonly router: Router) {}
 
   ngOnInit(): void {
     this.buildDays();
@@ -95,6 +121,7 @@ export class CalendarComponent implements OnInit {
 
   select(day: CalendarDay): void {
     this.selectedBookings = this.eventsFor(day.iso);
+    this.selectedBezichtigingen = this.bezichtigingenFor(day.iso);
     this.detailsOpen = true;
   }
 
@@ -105,13 +132,18 @@ export class CalendarComponent implements OnInit {
     });
   }
 
-  eventClass(type: EventType): string {
-    return {
-      BRUILOFT: 'bg-rose-600',
-      VERJAARDAG: 'bg-amber-500',
-      CONGRES: 'bg-blue-600',
-      OVERIG: 'bg-emerald-600'
-    }[type];
+  bezichtigingenFor(iso: string): Bezichtiging[] {
+    return this.bezichtigingen.filter((bezichtiging) => bezichtiging.status !== 'GEANNULEERD' && bezichtiging.datum === iso);
+  }
+
+  eventClass(booking: Booking): string {
+    return ['BEVESTIGD', 'AANBETALING_BETAALD', 'VOLLEDIG_BETAALD', 'AFGEROND'].includes(booking.status)
+      ? 'bg-emerald-600'
+      : 'bg-amber-500';
+  }
+
+  openBezichtiging(bezichtiging: Bezichtiging): void {
+    void this.router.navigate(['/bezichtigingen', bezichtiging.id]);
   }
 
   bookingSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
@@ -130,6 +162,7 @@ export class CalendarComponent implements OnInit {
     const start = this.days[0].iso;
     const end = this.days[this.days.length - 1].iso;
     this.api.calendarBookings(start, end).subscribe((bookings) => this.bookings = bookings);
+    this.api.calendarBezichtigingen(start, end).subscribe((bezichtigingen) => this.bezichtigingen = bezichtigingen);
   }
 
   private buildDays(): void {

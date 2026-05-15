@@ -14,6 +14,7 @@ export type InvoiceType = 'VOLLEDIG' | 'AANBETALING' | 'RESTANT';
 export type PaymentMethod = 'BANK' | 'CASH' | 'PIN';
 export type PaymentPart = 'AANBETALING' | 'RESTANT';
 export type PaymentState = 'OPENSTAAND' | 'BETAALD' | 'VERLOPEN';
+export type BezichtigingStatus = 'GEPLAND' | 'GEWEEST' | 'GEANNULEERD';
 export type MailLogType =
   | 'OFFERTE_VERZONDEN'
   | 'BEZICHTIGING_BEVESTIGING'
@@ -139,6 +140,22 @@ export interface MailLog {
   status: MailLogStatus;
   foutmelding?: string;
   verzondenOp: string;
+}
+
+export interface Bezichtiging {
+  id: number;
+  klantNaam: string;
+  klantEmail: string;
+  klantTelefoon: string;
+  datum: string;
+  startTijd: string;
+  eindTijd: string;
+  status: BezichtigingStatus;
+  notities?: string;
+  bookingId?: number;
+  bookingKlantNaam?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Contract {

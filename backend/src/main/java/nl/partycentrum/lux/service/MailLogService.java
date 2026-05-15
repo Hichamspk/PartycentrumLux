@@ -6,6 +6,7 @@ import nl.partycentrum.lux.domain.MailLogStatus;
 import nl.partycentrum.lux.domain.MailLogType;
 import nl.partycentrum.lux.dto.mail.MailLogResponse;
 import nl.partycentrum.lux.exception.ApiException;
+import nl.partycentrum.lux.repository.BezichtigingRepository;
 import nl.partycentrum.lux.repository.BookingRepository;
 import nl.partycentrum.lux.repository.MailLogRepository;
 import org.springframework.http.HttpStatus;
@@ -21,13 +22,16 @@ public class MailLogService {
 
     private final MailLogRepository mailLogRepository;
     private final BookingRepository bookingRepository;
+    private final BezichtigingRepository bezichtigingRepository;
 
     public MailLogService(
             MailLogRepository mailLogRepository,
-            BookingRepository bookingRepository
+            BookingRepository bookingRepository,
+            BezichtigingRepository bezichtigingRepository
     ) {
         this.mailLogRepository = mailLogRepository;
         this.bookingRepository = bookingRepository;
+        this.bezichtigingRepository = bezichtigingRepository;
     }
 
     @Transactional(readOnly = true)
@@ -117,7 +121,12 @@ public class MailLogService {
 
     private String klantNaam(MailLog log) {
         if (log.getBookingId() == null) {
-            return null;
+            if (log.getBezichtigingId() == null) {
+                return null;
+            }
+            return bezichtigingRepository.findById(log.getBezichtigingId())
+                    .map(bezichtiging -> bezichtiging.getKlantNaam())
+                    .orElse(null);
         }
         return bookingRepository.findById(log.getBookingId())
                 .map(Booking::getCustomer)

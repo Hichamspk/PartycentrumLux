@@ -4,6 +4,7 @@ import nl.partycentrum.lux.domain.MailLogStatus;
 import nl.partycentrum.lux.domain.MailLogType;
 import nl.partycentrum.lux.dto.mail.MailLogResponse;
 import nl.partycentrum.lux.exception.ApiException;
+import nl.partycentrum.lux.service.BezichtigingService;
 import nl.partycentrum.lux.service.MailLogService;
 import nl.partycentrum.lux.service.MailService;
 import nl.partycentrum.lux.service.OfferteService;
@@ -25,15 +26,18 @@ public class MailLogController {
     private final MailLogService mailLogService;
     private final MailService mailService;
     private final OfferteService offerteService;
+    private final BezichtigingService bezichtigingService;
 
     public MailLogController(
             MailLogService mailLogService,
             MailService mailService,
-            OfferteService offerteService
+            OfferteService offerteService,
+            BezichtigingService bezichtigingService
     ) {
         this.mailLogService = mailLogService;
         this.mailService = mailService;
         this.offerteService = offerteService;
+        this.bezichtigingService = bezichtigingService;
     }
 
     @GetMapping
@@ -63,7 +67,7 @@ public class MailLogController {
         if (log.getStatus() != MailLogStatus.MISLUKT) {
             throw new ApiException(HttpStatus.CONFLICT, "Alleen mislukte mails kunnen opnieuw verstuurd worden.");
         }
-        if (log.getBookingId() == null) {
+        if (log.getBookingId() == null && log.getBezichtigingId() == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Deze mail kan nog niet automatisch opnieuw verstuurd worden.");
         }
 
@@ -75,6 +79,8 @@ public class MailLogController {
             case EVENEMENT_HERINNERING -> mailService.sendEventReminderByBookingId(log.getBookingId());
             case REVIEW_VERZOEK -> mailService.sendReviewRequestByBookingId(log.getBookingId());
             case ANNULERING -> mailService.sendCancellationByBookingId(log.getBookingId());
+            case BEZICHTIGING_BEVESTIGING -> bezichtigingService.sendBevestigingsmail(log.getBezichtigingId());
+            case BEZICHTIGING_HERINNERING -> bezichtigingService.sendHerinnering(log.getBezichtigingId());
             default -> throw new ApiException(HttpStatus.BAD_REQUEST, "Deze mailsoort wordt later ondersteund voor opnieuw versturen.");
         }
 

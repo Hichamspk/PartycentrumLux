@@ -13,13 +13,16 @@ public class ScheduledJobService {
 
     private final BookingRepository bookingRepository;
     private final MailService mailService;
+    private final BezichtigingService bezichtigingService;
 
     public ScheduledJobService(
             BookingRepository bookingRepository,
-            MailService mailService
+            MailService mailService,
+            BezichtigingService bezichtigingService
     ) {
         this.bookingRepository = bookingRepository;
         this.mailService = mailService;
+        this.bezichtigingService = bezichtigingService;
     }
 
     @Transactional
@@ -27,6 +30,7 @@ public class ScheduledJobService {
         var today = LocalDate.now();
         sendPaymentReminders(today);
         sendEventReminders(today);
+        sendBezichtigingHerinneringen(today);
         autoFinishFullyPaidBookings(today);
     }
 
@@ -52,6 +56,12 @@ public class ScheduledJobService {
     @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
     public void scheduledEventReminders() {
         sendEventReminders(LocalDate.now());
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 8 * * *", zone = "Europe/Amsterdam")
+    public void scheduledBezichtigingHerinneringen() {
+        sendBezichtigingHerinneringen(LocalDate.now());
     }
 
     @Transactional
@@ -84,6 +94,11 @@ public class ScheduledJobService {
     public void sendEventReminders(LocalDate today) {
         bookingRepository.findByEventDateAndStatus(today.plusDays(7), BookingStatus.VOLLEDIG_BETAALD)
                 .forEach(mailService::sendEventReminder);
+    }
+
+    @Transactional
+    public void sendBezichtigingHerinneringen(LocalDate today) {
+        bezichtigingService.sendHerinneringenVoorDatum(today.plusDays(1));
     }
 
     @Transactional

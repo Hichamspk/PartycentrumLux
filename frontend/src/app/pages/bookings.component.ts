@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { switchMap } from 'rxjs';
@@ -264,6 +265,7 @@ export class BookingsComponent implements OnInit {
   cancelDialogOpen = false;
   cancelReason = '';
   bookingToCancel: Booking | null = null;
+  prefillBezichtigingId: number | null = null;
   customProperty = '';
   selectedProperties = new Set<string>();
   readonly defaultProperties = [
@@ -328,12 +330,26 @@ export class BookingsComponent implements OnInit {
     private readonly api: ApiService,
     private readonly confirmations: ConfirmationService,
     private readonly messages: MessageService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.load();
     this.loadCustomers();
+    this.route.queryParamMap.subscribe((params) => {
+      if (params.has('klantNaam') || params.has('bezichtigingId')) {
+        this.prefillBezichtigingId = Number(params.get('bezichtigingId')) || null;
+        this.openCreate();
+        this.creatingCustomer = true;
+        this.form.controls.newCustomer.patchValue({
+          name: params.get('klantNaam') ?? '',
+          email: params.get('klantEmail') ?? '',
+          phone: params.get('klantTelefoon') ?? '',
+          address: ''
+        });
+      }
+    });
   }
 
   get subPrijzen(): FormArray<FormGroup> {
@@ -450,14 +466,14 @@ export class BookingsComponent implements OnInit {
       this.api.saveCustomer(this.form.controls.newCustomer.getRawValue()).pipe(
         switchMap((customer) => this.api.saveBooking(this.buildBookingPayload(customer.id)))
       ).subscribe({
-        next: () => this.afterSave(),
+        next: (booking) => this.afterBookingSaved(booking),
         error: (error) => this.saveError(error)
       });
       return;
     }
 
     this.api.saveBooking(this.buildBookingPayload(this.form.controls.customerId.value as number)).subscribe({
-      next: () => this.afterSave(),
+      next: (booking) => this.afterBookingSaved(booking),
       error: (error) => this.saveError(error)
     });
   }
@@ -607,6 +623,14 @@ export class BookingsComponent implements OnInit {
     this.dialogOpen = false;
     this.loadCustomers();
     this.load();
+  }
+
+  private afterBookingSaved(booking: Booking): void {
+    if (this.prefillBezichtigingId) {
+      this.api.linkBezichtigingToBoeking(this.prefillBezichtigingId, booking.id).subscribe();
+      this.prefillBezichtigingId = null;
+    }
+    this.afterSave();
   }
 
   private saveError(error: { error?: { message?: string } }): void {
